@@ -1,5 +1,8 @@
 import Codec from './Codec.js'
 
+const toBinString = (bytes) =>
+  bytes.reduce((str, byte) => str + byte.toString(2).padStart(8, '0') + ' ', '');
+
 let codec = new Codec({
 	type: 'object',
 	properties: {
@@ -19,7 +22,7 @@ let codec = new Codec({
 					type: 'string'
 				}
 			},
-			required: ['id', 'created_at']
+			required: ['id']
 		},
 		posts: {
 			type: 'array',
