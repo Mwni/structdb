@@ -1,5 +1,6 @@
 {
-	"name": "@jxdb/codec",
+	"name": "@minitx/codec",
 	"type": "module",
-	"version": "1.0.0-alpha"
+	"version": "1.0.0-alpha",
+	"main": "Codec.js"
 }
