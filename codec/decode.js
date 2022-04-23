@@ -28,7 +28,7 @@ export function array(schema){
 
 export function string(){
 	let length = readSize.call(this)
-	let string = utf8.decode(this.buffer.slice(this.offset, this.offset + length))
+	let string = utf8.decode(new Uint8Array(this.buffer.slice(this.offset, this.offset + length)))
 
 	this.offset += length
 

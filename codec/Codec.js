@@ -26,7 +26,7 @@ export default class Codec{
 	decode(buffer){
 		let state = {
 			view: new DataView(buffer),
-			buffer: this.buffer,
+			buffer: buffer,
 			offset: 0,
 			methods: decodeMethods
 		}
