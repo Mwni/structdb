@@ -60,8 +60,6 @@ function writeCompact(data){
 	if(bits > 6 - continuations)
 		continuations++
 
-	console.log(bits, continuations)
-
 	let bytes = new Uint8Array(1 + continuations)
 
 	if(continuations === 0){
