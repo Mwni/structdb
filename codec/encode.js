@@ -49,13 +49,17 @@ function writeCompact(data){
 	let continuations = last
 	let bits = 8
 
-	while(!data[last]){
+	while(!data[last] && last > 0){
 		last--
 		continuations--
 	}
 
-	while(!(data[last] & (1 << bits - 1)))
-		bits--
+	if(data[last])
+		while(!(data[last] & (1 << bits - 1)))
+			bits--
+	else
+		bits = 0
+	
 
 	if(bits > 6 - continuations)
 		continuations++

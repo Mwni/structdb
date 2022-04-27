@@ -74,7 +74,7 @@
 					"$ref": "#/definitions/User"
 				},
 				"idea": {
-					"$ref": "#/definitions/User"
+					"$ref": "#/definitions/Idea"
 				},
 				"type": {
 					"type": "string",
@@ -82,7 +82,7 @@
 				}
 			},
 			"required": ["user", "idea", "type"],
-			"uniques": [["user", "idea", "type"]]
+			"unique": ["user", "idea", "type"]
 		}
 	}
 }

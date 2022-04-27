@@ -1,5 +1,5 @@
 import fs from 'fs/promises'
-import { Client } from '@crisma/sqlite'
+import { Client } from '@jxdb/sqlite'
 
 let schemaString = await fs.readFile('schema.json')
 let schemaJson = JSON.parse(schemaString)
@@ -9,15 +9,21 @@ let client = new Client({
 })
 
 async function createPost(){
-	let user = await client.users.insertOne({
-		nick: 'Mwni'
-	})
-	
-	let post = await user.posts.insertOne({
-		text: 'This is awesome.'
+	let user = await client.users.createOne({
+		data: {
+			nick: 'Mwni'
+		}
 	})
 
-	console.log('created post:', post)
+	console.log('created user:', user)
+	
+	let idea = await user.ideas.createOne({
+		data: {
+			text: 'This is awesome.'
+		}
+	})
+
+	console.log('created idea:', idea)
 }
 
 

@@ -3,12 +3,17 @@ export default class Schema{
 		this.struct = schema
 		this.tables = []
 		this.indices = []
+		this.nodes = []
 		this.parse(schema)
 	}
 
 	parse(schema){
 		for(let [name, def] of Object.entries(schema.definitions)){
 			this.makeTable(name, def)
+		}
+
+		for(let [name, def] of Object.entries(schema.properties)){
+			this.makeNode(name, def)
 		}
 	}
 
@@ -59,5 +64,12 @@ export default class Schema{
 		}
 
 		this.tables.push({name, fields})
+	}
+
+	makeNode(name, schema){
+		this.nodes.push({
+			name,
+			table: this.tables[0]
+		})
 	}
 }
