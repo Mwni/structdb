@@ -1,0 +1,6 @@
+{
+	"name": "@crisma/core",
+	"version": "1.0.0-alpha",
+	"type": "module",
+	"main": "index.js"
+}

@@ -1,0 +1,88 @@
+{
+	"title": "Test Schema",
+	"properties": {
+		"users": {
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/User"
+			}
+		},
+		"ideas": {
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/Idea"
+			}
+		},
+		"votes": {
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/Vote"
+			}
+		}
+	},
+	"definitions": {
+		"User": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer",
+					"id": true
+				},
+				"nick": {
+					"type": "string",
+					"unique": true
+				},
+				"ideas": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Idea"
+					}
+				}
+			},
+			"required": ["nick"]
+		},
+		"Idea": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer",
+					"id": true
+				},
+				"user": {
+					"$ref": "#/definitions/User"
+				},
+				"text": {
+					"type": "string"
+				},
+				"votes": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Vote"
+					}
+				}
+			},
+			"required": ["user", "text"]
+		},
+		"Vote": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer",
+					"id": true
+				},
+				"user": {
+					"$ref": "#/definitions/User"
+				},
+				"idea": {
+					"$ref": "#/definitions/User"
+				},
+				"type": {
+					"type": "string",
+					"enum": ["up", "down"]
+				}
+			},
+			"required": ["user", "idea", "type"],
+			"uniques": [["user", "idea", "type"]]
+		}
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"name": "@crisma/sqlite",
+	"version": "1.0.0-alpha",
+	"type": "module",
+	"main": "index.js",
+	"dependencies": {
+		"@crisma/core": "file:../core",
+		"better-sqlite3": "^7.5.1"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"name": "@crisma/test",
+	"version": "1.0.0-alpha",
+	"type": "module",
+	"dependencies": {
+		"@crisma/sqlite": "file:../sqlite"
+	}
+}
