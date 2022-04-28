@@ -34,6 +34,7 @@ export default class Client{
 	}
 
 	#createNodes(){
+		return
 		for(let [key, schema] of this.schema.nodes){
 			this[key] = new Node({
 				client: this,

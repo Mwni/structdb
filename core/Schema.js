@@ -1,20 +1,55 @@
 export default class Schema{
 	constructor(schema){
-		this.struct = schema
+		this.raw = schema
+		this.tree = []
 		this.tables = []
 		this.indices = []
-		this.nodes = []
 		this.parse(schema)
 	}
 
 	parse(schema){
-		for(let [name, def] of Object.entries(schema.definitions)){
-			this.makeTable(name, def)
+		this.makeTree(schema)
+	}
+
+	makeTree(schema){
+		let tree = this.deriveNode(schema)
+
+		console.log(tree)
+	}
+
+	deriveNode(object){
+		let fields = {}
+		let relations = {}
+
+		for(let [key, schema] of Object.entries(object.properties)){
+			if(schema['$ref']){
+				schema = this.pullRef(schema['$ref'])
+			}
+
+			if(schema.type === 'array'){
+				
+			}else if(schema.type === 'object'){
+				throw 'not implemented'
+			}else{
+				fields[key] = schema
+			}
 		}
 
-		for(let [name, def] of Object.entries(schema.properties)){
-			this.makeNode(name, def)
+		return { fields, relations }
+	}
+
+	deriveRelations(object){
+		let relations = []
+
+		for(let [key, prop] of Object.entries(object.properties)){
+
 		}
+
+		return relations
+	}
+
+	pullRef(url){
+		return this.raw.definitions[url.slice(14)]
 	}
 
 	makeTable(name, schema){
@@ -64,12 +99,5 @@ export default class Schema{
 		}
 
 		this.tables.push({name, fields})
-	}
-
-	makeNode(name, schema){
-		this.nodes.push({
-			name,
-			table: this.tables[0]
-		})
 	}
 }
