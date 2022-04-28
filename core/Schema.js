@@ -2,73 +2,64 @@ export default class Schema{
 	constructor(schema){
 		this.inputSchema = schema
 		this.filledSchema = this.fill(schema)
-		this.tree = []
-		this.models = []
+		this.roots = []
 		this.tables = []
 		this.indices = []
-
-		console.log(this.filledSchema)
+		this.parse()
 	}
 
-	fill(node, refs = []){
+	fill(node, previousRefNodes = []){
 		if(Array.isArray(node)){
-			return node.map(element => this.fill(element, refs))
+			return node.map(element => this.fill(element, previousRefNodes))
 		}else if(node && typeof node === 'object'){
 			let refUrl = node['$ref']
 
 			if(refUrl){
 				let refSchema = this.inputSchema.definitions[refUrl.slice(14)]
-				let previousRef = refs.find(r => r === refSchema)
+				let previousRefNode = previousRefNodes.find(r => r['$ref'] === refUrl)
 
-				if(previousRef){
-					return {
-						...previousRef.schema,
-						...node,
-						'$recursed': true
-					}
-				}
+				if(previousRefNode)
+					return previousRefNode
+				
 
 				node = { 
 					...node,
 					...refSchema,  
 				}
 
-				refs.push(refSchema)
+				previousRefNodes.push(node)
 			}
 
-			return Object.entries(node)
-				.reduce((o, [k, v]) => ({...o, [k]: this.fill(v, refs)}), {})
+			for(let [k, v] of Object.entries(node)){
+				node[k] = this.fill(v, previousRefNodes)
+			}
+
+			return node
 		}else{
 			return node
 		}
 	}
 
-	parse(schema){
+	parse(){
+		//console.log(JSON.stringify(this.filledSchema, null, 4))
+		let tree = this.walk(this.filledSchema)
 
-		this.makeTree(schema)
+		this.roots = tree.children
+
+		console.dir(this.roots, { depth: 11 })
 	}
 
-	makeTree(schema){
-		let tree = this.walk(schema)
-
-		console.log(JSON.stringify(tree, null, 4))
-		console.log(JSON.stringify(this.tables, null, 4))
-	}
-
-	walk(schema){
+	walk(schema, previousNodes = []){
+		let previous = previousNodes.find(p => p.schema === schema)
+		let node = {}
 		let fields = []
 		let relations = []
 
+		if(previous)
+			return previous.node
+
 		for(let [key, prop] of Object.entries(schema.properties)){
-			if(prop['$ref']){
-				prop = this.pullRef(prop['$ref'])
-			}
-
 			if(prop.type === 'array'){
-				if( prop.items['$ref']){
-					prop.items = this.pullRef(prop.items['$ref'])
-				}
-
 				let referenceKeys = this.findReferenceKeys(prop.items, schema)
 
 				if(referenceKeys.length === 0){
@@ -76,14 +67,14 @@ export default class Schema{
 						key,
 						schema: prop.items,
 						referenceKey: referenceKeys[0],
-						array: true,
+						many: true,
 					})
 				}else if(referenceKeys.length === 1){
 					relations.push({
 						key,
 						schema: prop.items,
 						referenceKey: referenceKeys[0],
-						array: true,
+						many: true,
 					})
 				}else{
 					console.log(referenceKeys)
@@ -119,32 +110,31 @@ export default class Schema{
 			}
 		}
 
-		let table = this.matchTable({ fields })
+		node.table = this.matchTable({ fields })
+		node.children = []
 
-		if(!table){
-			this.tables.push(table = {
+		previousNodes.push({ node, schema })
+
+		if(!node.table){
+			this.tables.push(node.table = {
 				fields
 			})
 		}
 
-		return {
-			table,
-			children: relations
-				.map(relation => ({
-					...relation,
-					...this.walk(relation.schema),
-				}))
+		for(let { schema, ...relation } of relations){
+			node.children.push({
+				...relation,
+				...this.walk(schema, previousNodes),
+			})
 		}
+
+		return node
 	}
 
 	findReferenceKeys(from, to){
 		let keys = []
 
 		for(let [key, prop] of Object.entries(from.properties)){
-			if(prop['$ref']){
-				prop = this.pullRef(prop['$ref'])
-			}
-
 			if(prop['$ref'] && prop['$ref'] === to['$ref'])
 				keys.push(key)
 		}
@@ -156,13 +146,6 @@ export default class Schema{
 		return this.tables.find(table => deepCompare(table.fields, fields))
 	}
 
-
-	pullRef(url){
-		return {
-			...this.raw.definitions[url.slice(14)],
-			'$ref': url
-		}
-	}
 
 	makeTable(name, schema){
 		let fields = []
