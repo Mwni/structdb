@@ -1,16 +1,46 @@
 export default class Schema{
 	constructor(schema){
-		this.input = schema
+		this.inputSchema = schema
+		this.filledSchema = this.fill(schema)
 		this.tree = []
 		this.models = []
 		this.tables = []
 		this.indices = []
-		this.fill()
-		this.parse()
+
+		console.log(this.filledSchema)
 	}
 
-	fill(){
-		
+	fill(node, refs = []){
+		if(Array.isArray(node)){
+			return node.map(element => this.fill(element, refs))
+		}else if(node && typeof node === 'object'){
+			let refUrl = node['$ref']
+
+			if(refUrl){
+				let refSchema = this.inputSchema.definitions[refUrl.slice(14)]
+				let previousRef = refs.find(r => r === refSchema)
+
+				if(previousRef){
+					return {
+						...previousRef.schema,
+						...node,
+						'$recursed': true
+					}
+				}
+
+				node = { 
+					...node,
+					...refSchema,  
+				}
+
+				refs.push(refSchema)
+			}
+
+			return Object.entries(node)
+				.reduce((o, [k, v]) => ({...o, [k]: this.fill(v, refs)}), {})
+		}else{
+			return node
+		}
 	}
 
 	parse(schema){
