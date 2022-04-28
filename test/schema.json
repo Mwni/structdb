@@ -29,8 +29,7 @@
 					"id": true
 				},
 				"nick": {
-					"type": "string",
-					"unique": true
+					"type": "string"
 				},
 				"ideas": {
 					"type": "array",
@@ -39,7 +38,8 @@
 					}
 				}
 			},
-			"required": ["nick"]
+			"required": ["nick"],
+			"unique": ["nick"]
 		},
 		"Idea": {
 			"type": "object",

@@ -1,52 +1,23 @@
+import { deepCompare } from './utils.js'
+
+
 export default class Schema{
 	constructor(schema){
 		this.inputSchema = schema
 		this.filledSchema = this.fill(schema)
 		this.roots = []
 		this.tables = []
-		this.indices = []
 		this.parse()
 	}
 
-	fill(node, previousRefNodes = []){
-		if(Array.isArray(node)){
-			return node.map(element => this.fill(element, previousRefNodes))
-		}else if(node && typeof node === 'object'){
-			let refUrl = node['$ref']
-
-			if(refUrl){
-				let refSchema = this.inputSchema.definitions[refUrl.slice(14)]
-				let previousRefNode = previousRefNodes.find(r => r['$ref'] === refUrl)
-
-				if(previousRefNode)
-					return previousRefNode
-				
-
-				node = { 
-					...node,
-					...refSchema,  
-				}
-
-				previousRefNodes.push(node)
-			}
-
-			for(let [k, v] of Object.entries(node)){
-				node[k] = this.fill(v, previousRefNodes)
-			}
-
-			return node
-		}else{
-			return node
-		}
-	}
-
 	parse(){
-		//console.log(JSON.stringify(this.filledSchema, null, 4))
-		let tree = this.walk(this.filledSchema)
+		this.roots = this.walk(this.filledSchema)
+			.children
 
-		this.roots = tree.children
+		this.tables = this.tables
+			.slice(1)
 
-		console.dir(this.roots, { depth: 11 })
+		//console.dir(this.roots, { depth: 5 })
 	}
 
 	walk(schema, previousNodes = []){
@@ -110,16 +81,10 @@ export default class Schema{
 			}
 		}
 
-		node.table = this.matchTable({ fields })
+		node.table = this.createTable({ fields, schema })
 		node.children = []
 
 		previousNodes.push({ node, schema })
-
-		if(!node.table){
-			this.tables.push(node.table = {
-				fields
-			})
-		}
 
 		for(let { schema, ...relation } of relations){
 			node.children.push({
@@ -142,69 +107,87 @@ export default class Schema{
 		return keys
 	}
 
-	matchTable({ fields }){
-		return this.tables.find(table => deepCompare(table.fields, fields))
-	}
+	createTable({ fields, schema }){
+		let table = this.tables
+			.find(t => deepCompare(t.fields, fields))
 
-
-	makeTable(name, schema){
-		let fields = []
-		let required = schema.required || []
-
-		for(let [key, prop] of Object.entries(schema.properties)){
-			let primary = false
-			let unique = false
-			let autoincrement = false
-			let notNull = required.includes(key)
-			let type
-
-			if(prop.type === 'array' && prop.items['$ref']){
-				continue
-			}
-
-			if(prop['$ref']){
-				type = 'integer'
-			}else{
-				type = prop.type
-			}
-
-			if(prop.id){
-				primary = true
-				unique = true
-				notNull = true
-				autoincrement = !required.includes(key)
-			}else if(prop.unique){
-				unique = true
-
-				this.indices.push({
-					table: name,
-					name: `${name}_${key}_key`,
-					unique: true,
-					fields: [key]
-				})
-			}
-
-			fields.push({
-				name: key,
-				type,
-				notNull,
-				primary,
-				autoincrement,
-			})
+		if(!table){
+			this.tables.push(
+				table = {
+					fields,
+					indices: []
+				}
+			)
+		}
+			
+		if(!table.name && schema['$ref']){
+			table.name = schema['$ref']
+				.split('/')
+				.slice(-1)
+				[0]
 		}
 
-		this.tables.push({name, fields})
-	}
-}
+		if(schema.unique){
+			let uniques = Array.isArray(schema.unique[0])
+				? schema.unique
+				: [schema.unique]
 
-function deepCompare(obj1, obj2, reversed){
-	for(let key in obj1){
-		if(typeof obj1[key] === 'object' && typeof obj2[key] === 'object'){
-			if(!deepCompare(obj1[key], obj2[key])) 
-				return false
-		}else if(obj1[key] !== obj2[key]) 
-			return false
+			for(let fields of uniques){
+				let name = `${table.name}Unique`
+
+				for(let field of fields){
+					name += field.slice(0, 1).toUpperCase() + field.slice(1)
+				}
+
+				table.indices.push({
+					name,
+					unique: true,
+					fields,
+				})
+			}
+		}
+
+		for(let field of table.fields){
+			field.required = field.required 
+				|| !schema.required 
+				|| schema.required.includes(field.key)
+
+			field.default = field.default 
+				|| schema.default 
+		}
+		
+		return table
 	}
 
-	return reversed ? true : deepCompare(obj2, obj1, true)
+	fill(node, previousRefNodes = []){
+		if(Array.isArray(node)){
+			return node.map(element => this.fill(element, previousRefNodes))
+		}else if(node && typeof node === 'object'){
+			let refUrl = node['$ref']
+
+			if(refUrl){
+				let refSchema = this.inputSchema.definitions[refUrl.slice(14)]
+				let previousRefNode = previousRefNodes.find(r => r['$ref'] === refUrl)
+
+				if(previousRefNode)
+					return previousRefNode
+				
+
+				node = { 
+					...node,
+					...refSchema,  
+				}
+
+				previousRefNodes.push(node)
+			}
+
+			for(let [k, v] of Object.entries(node)){
+				node[k] = this.fill(v, previousRefNodes)
+			}
+
+			return node
+		}else{
+			return node
+		}
+	}
 }
