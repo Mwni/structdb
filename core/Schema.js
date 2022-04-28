@@ -2,6 +2,7 @@ export default class Schema{
 	constructor(schema){
 		this.raw = schema
 		this.tree = []
+		this.models = []
 		this.tables = []
 		this.indices = []
 		this.parse(schema)
@@ -12,14 +13,100 @@ export default class Schema{
 	}
 
 	makeTree(schema){
-		let tree = this.deriveNode(schema)
+		let tree = this.walk(schema.properties.users.items)
 
 		console.log(tree)
 	}
 
+	walk(schema){
+		let fields = []
+		let pointers = []
+		let relations = []
+
+		for(let [key, prop] of Object.entries(schema.properties)){
+			if(prop['$ref']){
+				prop = this.pullRef(prop['$ref'])
+			}
+
+			if(prop.type === 'array'){
+				let childRelations = this.findRelations(prop.items, schema)
+
+				if(childRelations.length === 0){
+					if(schema === this.raw){
+
+					}
+				}else if(childRelations.length === 1){
+
+				}else{
+					throw 'conflicting relations'
+				}
+			}else if(prop.type === 'object'){
+				let childRelations = this.findRelations(prop, schema)
+
+				if(childRelations.length === 0){
+					fields.push({
+						key,
+						type: 'integer'
+					})
+
+					loaders.push({
+						key
+					})
+				}else if(childRelations.length === 1){
+					
+				}else{
+					throw 'conflicting relations'
+				}
+			}else{
+				fields.push({
+					...prop, 
+					key
+				})
+			}
+		}
+
+		let model = this.matchModel({ fields, pointers })
+
+		if(!model){
+			this.models.push(model = {
+				fields,
+				pointers
+			})
+		}
+
+		return {
+			model,
+			
+		}
+	}
+
+	findRelations(from, to){
+		let relations = []
+
+		for(let [key, prop] of Object.entries(from.properties)){
+			if(prop['$ref']){
+				prop = this.pullRef(prop['$ref'])
+			}
+
+			if(prop['$ref'] === to['$ref'])
+				relations.push({key})
+		}
+		
+		return relations
+	}
+
+	matchModel({ fields, pointers }){
+		return null
+	}
+
+	deriveTable(schema){
+
+	}
+
 	deriveNode(object){
-		let fields = {}
-		let relations = {}
+		let fields = []
+		let children = []
+		let relations = []
 
 		for(let [key, schema] of Object.entries(object.properties)){
 			if(schema['$ref']){
@@ -27,15 +114,21 @@ export default class Schema{
 			}
 
 			if(schema.type === 'array'){
-				
+				relations.push({
+					type: 'o2m',
+					from: this.deriveNode(schema.items)
+				})
 			}else if(schema.type === 'object'){
 				throw 'not implemented'
 			}else{
-				fields[key] = schema
+				fields.push({...schema, key})
 			}
 		}
 
-		return { fields, relations }
+		let model = { fields, children }
+
+
+		return { model, relations }
 	}
 
 	deriveRelations(object){
@@ -49,7 +142,10 @@ export default class Schema{
 	}
 
 	pullRef(url){
-		return this.raw.definitions[url.slice(14)]
+		return {
+			...this.raw.definitions[url.slice(14)],
+			'$ref': url
+		}
 	}
 
 	makeTable(name, schema){
