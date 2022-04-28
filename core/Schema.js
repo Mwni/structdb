@@ -1,26 +1,32 @@
 export default class Schema{
 	constructor(schema){
-		this.raw = schema
+		this.input = schema
 		this.tree = []
 		this.models = []
 		this.tables = []
 		this.indices = []
-		this.parse(schema)
+		this.fill()
+		this.parse()
+	}
+
+	fill(){
+		
 	}
 
 	parse(schema){
+
 		this.makeTree(schema)
 	}
 
 	makeTree(schema){
-		let tree = this.walk(schema.properties.users.items)
+		let tree = this.walk(schema)
 
-		console.log(tree)
+		console.log(JSON.stringify(tree, null, 4))
+		console.log(JSON.stringify(this.tables, null, 4))
 	}
 
 	walk(schema){
 		let fields = []
-		let pointers = []
 		let relations = []
 
 		for(let [key, prop] of Object.entries(schema.properties)){
@@ -29,31 +35,49 @@ export default class Schema{
 			}
 
 			if(prop.type === 'array'){
-				let childRelations = this.findRelations(prop.items, schema)
+				if( prop.items['$ref']){
+					prop.items = this.pullRef(prop.items['$ref'])
+				}
 
-				if(childRelations.length === 0){
-					if(schema === this.raw){
+				let referenceKeys = this.findReferenceKeys(prop.items, schema)
 
-					}
-				}else if(childRelations.length === 1){
-
+				if(referenceKeys.length === 0){
+					relations.push({
+						key,
+						schema: prop.items,
+						referenceKey: referenceKeys[0],
+						array: true,
+					})
+				}else if(referenceKeys.length === 1){
+					relations.push({
+						key,
+						schema: prop.items,
+						referenceKey: referenceKeys[0],
+						array: true,
+					})
 				}else{
+					console.log(referenceKeys)
 					throw 'conflicting relations'
 				}
 			}else if(prop.type === 'object'){
-				let childRelations = this.findRelations(prop, schema)
+				let referenceKeys = this.findReferenceKeys(prop, schema)
 
-				if(childRelations.length === 0){
+				if(referenceKeys.length === 0){
 					fields.push({
 						key,
 						type: 'integer'
 					})
 
-					loaders.push({
-						key
+					relations.push({
+						key,
+						schema: prop
 					})
-				}else if(childRelations.length === 1){
-					
+				}else if(referenceKeys.length === 1){
+					relations.push({
+						key,
+						referenceKey: referenceKeys[0],
+						schema: prop
+					})
 				}else{
 					throw 'conflicting relations'
 				}
@@ -65,81 +89,43 @@ export default class Schema{
 			}
 		}
 
-		let model = this.matchModel({ fields, pointers })
+		let table = this.matchTable({ fields })
 
-		if(!model){
-			this.models.push(model = {
-				fields,
-				pointers
+		if(!table){
+			this.tables.push(table = {
+				fields
 			})
 		}
 
 		return {
-			model,
-			
+			table,
+			children: relations
+				.map(relation => ({
+					...relation,
+					...this.walk(relation.schema),
+				}))
 		}
 	}
 
-	findRelations(from, to){
-		let relations = []
+	findReferenceKeys(from, to){
+		let keys = []
 
 		for(let [key, prop] of Object.entries(from.properties)){
 			if(prop['$ref']){
 				prop = this.pullRef(prop['$ref'])
 			}
 
-			if(prop['$ref'] === to['$ref'])
-				relations.push({key})
+			if(prop['$ref'] && prop['$ref'] === to['$ref'])
+				keys.push(key)
 		}
 		
-		return relations
+		return keys
 	}
 
-	matchModel({ fields, pointers }){
-		return null
+	matchTable({ fields }){
+		return this.tables.find(table => deepCompare(table.fields, fields))
 	}
 
-	deriveTable(schema){
-
-	}
-
-	deriveNode(object){
-		let fields = []
-		let children = []
-		let relations = []
-
-		for(let [key, schema] of Object.entries(object.properties)){
-			if(schema['$ref']){
-				schema = this.pullRef(schema['$ref'])
-			}
-
-			if(schema.type === 'array'){
-				relations.push({
-					type: 'o2m',
-					from: this.deriveNode(schema.items)
-				})
-			}else if(schema.type === 'object'){
-				throw 'not implemented'
-			}else{
-				fields.push({...schema, key})
-			}
-		}
-
-		let model = { fields, children }
-
-
-		return { model, relations }
-	}
-
-	deriveRelations(object){
-		let relations = []
-
-		for(let [key, prop] of Object.entries(object.properties)){
-
-		}
-
-		return relations
-	}
 
 	pullRef(url){
 		return {
@@ -196,4 +182,16 @@ export default class Schema{
 
 		this.tables.push({name, fields})
 	}
+}
+
+function deepCompare(obj1, obj2, reversed){
+	for(let key in obj1){
+		if(typeof obj1[key] === 'object' && typeof obj2[key] === 'object'){
+			if(!deepCompare(obj1[key], obj2[key])) 
+				return false
+		}else if(obj1[key] !== obj2[key]) 
+			return false
+	}
+
+	return reversed ? true : deepCompare(obj2, obj1, true)
 }
