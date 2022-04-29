@@ -8,22 +8,17 @@ let client = new Client({
 	schema: schemaJson
 })
 
-async function createPost(){
-	let post = await client.posts.createOne({
+async function createIdea(){
+	let idea = await client.ideas.createOne({
 		data: {
-			text: 'Großartig',
+			text: 'Wieso eigentlich nicht',
 			user: {
 				nick: 'Mwni'
-			}
-		},
-		duplicate: {
-			user: {
-				ignore: true
 			}
 		}
 	})
 
-	console.log('created post:', post)
+	console.log('created idea:', idea)
 }
 
-await createPost()
+await createIdea()

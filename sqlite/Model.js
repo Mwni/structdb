@@ -2,8 +2,14 @@ import InsertQuery from './queries/InsertQuery.js'
 import SelectQuery from './queries/SelectQuery.js'
 
 
-export default function createModel({ data: modelData, database, config }){
-	class Model{
+export default function compile({ database, config }){
+	
+
+	return class{
+		get name(){
+			return config.table.name
+		}
+
 		constructor(data){
 			Object.assign(this, data)
 		}
@@ -11,7 +17,7 @@ export default function createModel({ data: modelData, database, config }){
 		async createOne({ data: inputData }){
 			let tableData = {}
 
-			for(let { key } of config.head.table.fields){
+			for(let { key } of config.table.fields){
 				if(!inputData.hasOwnProperty(key))
 					continue
 				
@@ -21,7 +27,7 @@ export default function createModel({ data: modelData, database, config }){
 			let { lastInsertRowid } = database.run(
 				new InsertQuery()
 					.data(tableData)
-					.into(config.head.table.name)
+					.into(config.table.name)
 			)
 
 			return await this.readOne({ rowid: lastInsertRowid })
@@ -30,7 +36,7 @@ export default function createModel({ data: modelData, database, config }){
 		async readOne({ where }){
 			let row = database.get(
 				new SelectQuery('*')
-					.from(config.head.table.name)
+					.from(config.table.name)
 					.where(where)
 					.limit(1)
 			)
@@ -45,6 +51,4 @@ export default function createModel({ data: modelData, database, config }){
 			})
 		}
 	}
-
-	return new Model(modelData)
 }

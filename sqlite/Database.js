@@ -4,6 +4,14 @@ import { table } from 'console'
 import CreateTableQuery from './queries/CreateTableQuery.js'
 import CreateIndexQuery from './queries/CreateIndexQuery.js'
 
+const typeMap = {
+	"integer": "INTEGER",
+	"string": "TEXT",
+	"number": "REAL",
+	"bigint": "BIGINT",
+	"blob": "BLOB"
+}
+
 
 export default class Database{
 	constructor({ file, schema }){
@@ -68,7 +76,7 @@ export default class Database{
 
 			fields.push({
 				name: key,
-				type,
+				type: typeMap[type],
 				notNull,
 				primary,
 				autoincrement,

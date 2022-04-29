@@ -1,15 +1,10 @@
-const typeMap = {
-	"integer": "INTEGER",
-	"string": "TEXT",
-	"number": "REAL",
-	"bigint": "BIGINT",
-	"blob": "BLOB"
-}
+import Query from './compileQuery.js'
 
 
-export default class{
-	constructor(name){
-		this.name = name
+export default class CreateTableQuery extends Query{
+	constructor(){
+		super()
+		this.setter('')
 	}
 
 	fields(fields){
