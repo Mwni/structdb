@@ -12,6 +12,20 @@ export default class Database{
 		this.#open()
 	}
 
+	run(query){
+		console.log(query.sql())
+		return this.connection
+			.prepare(query.sql())
+			.run(...query.values())
+	}
+
+	get(query){
+		console.log(query.sql())
+		return this.connection
+			.prepare(query.sql())
+			.get(...query.values())
+	}
+
 	#open(){
 		let startedBlank = !fs.existsSync(this.file)
 
@@ -29,13 +43,6 @@ export default class Database{
 
 			throw error
 		}
-	}
-
-	#run(query){
-		console.log(query.sql())
-		return this.connection
-			.prepare(query.sql())
-			.run(...query.values())
 	}
 
 	#construct(){
@@ -68,13 +75,13 @@ export default class Database{
 			})
 		}
 
-		this.#run(
+		this.run(
 			new CreateTableQuery(schema.name)
 				.fields(fields)
 		)
 
 		for(let { name, unique, fields } of schema.indices){
-			this.#run(
+			this.run(
 				new CreateIndexQuery(name, unique)
 					.on(schema.name)
 					.fields(fields)

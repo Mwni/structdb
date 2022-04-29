@@ -1,8 +1,8 @@
 export default class{
-	constructor({ fields }){
+	constructor(fields){
 		this.fields = fields
 		this.joins = []
-		this.wheres = []
+		this.whereTree = null
 	}
 
 	from(table){
@@ -10,8 +10,8 @@ export default class{
 		return this
 	}
 
-	where(sql, ...values){
-		this.wheres.push({sql, values})
+	where(where){
+		this.whereTree = {...this.whereTree, ...where}
 		return this
 	}
 
@@ -32,45 +32,25 @@ export default class{
 	}
 
 	sql(){
-		let where = (
-			this.wheres.length > 0 
-				? this.wheres 
-				: [{sql: '1'}]
-		)
-			.map(w => w.sql)
-			.join(' AND ')
+		let frags = []
 
-		let sql = `SELECT * FROM ??` 
+		frags.push(`SELECT *`)
+		frags.push(`FROM "${this.table}"`)
 
-		if(this.joins.length > 0){
-			for(let join of this.joins){
-				sql += ` ${join.type} JOIN ?? ON (${join.on})`
-			}
+		if(this.whereTree){
+			
 		}
 
-		if(where)
-			sql += ` WHERE ${where}`
-
 		if(this.orderKey)
-			sql += ` ORDER BY ?? ${this.orderDir}`
+			frags.push(`ORDER BY "${this.orderKey}" ${this.orderDir}`)
 
 		if(this.limitValue)
-			sql += ` LIMIT ${this.limitValue}`
+			frags.push(`LIMIT ${this.limitValue}`)
 
-		return sql
+		return frags.join(' ')
 	}
 
 	values(){
-		let values = []
-
-		values.push(this.table)
-		values = values.concat([...this.joins.reduce((vars, j) => [...vars, j.table, ...j.values], [])])
-		values = values.concat([...this.wheres.reduce((vars, w) => [...vars, ...w.values], [])])
-		
-		if(this.orderKey)
-			values.push(this.orderKey)
-
-
-		return values
+		return []
 	}
 }
