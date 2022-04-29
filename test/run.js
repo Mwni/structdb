@@ -34,9 +34,12 @@ async function findMwni(){
 		}
 	})
 
-	let posts = await user.posts
-		.loadAll()
-		.votes.countAll()
+	//let posts = await user.posts
+	//	.loadAll()
+	//	.votes.countAll()
+
+	let posts = await user.posts.loadAll()
+	let votes = await posts.votes.loadAll()
 }
 
 

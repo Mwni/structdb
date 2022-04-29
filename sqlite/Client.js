@@ -1,6 +1,6 @@
 import { Schema } from '@jxdb/core'
 import * as sql from './queries/SelectQuery.js'
-import Node from './Node.js'
+import Model from './Model.js'
 import Database from './Database.js'
 
 
@@ -12,6 +12,8 @@ export default class Client{
 	}
 
 	#createRoots(){
-		
+		for(let root of this.schema.roots){
+			this.model = new Model(root)
+		}
 	}
 }
