@@ -8,12 +8,23 @@ export default class Client{
 	constructor({ file, schema }){
 		this.schema = new Schema(schema)
 		this.database = new Database({ file, schema: this.schema })
-		this.#createRoots()
+		this.models = {}
+		this.#compileModels()
+		this.#exposeRoots()
 	}
 
-	#createRoots(){
+	#compileModels(){
 		for(let root of this.schema.roots){
-			this.model = new Model(root)
+			this.models[root.key] = new Model({
+				database: this.database,
+				config: root,
+			})
+		}
+	}
+
+	#exposeRoots(){
+		for(let [key, CompiledModel] of Object.entries(this.models)){
+			this[key] = new CompiledModel()
 		}
 	}
 }
