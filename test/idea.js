@@ -21,4 +21,11 @@ async function createIdea(){
 	console.log('created idea:', idea)
 }
 
+async function wipe(){
+	await client.close()
+	await fs.unlink('test.db')
+}
+
 await createIdea()
+	.catch(error => console.error(error))
+await wipe()

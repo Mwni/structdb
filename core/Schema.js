@@ -5,26 +5,22 @@ export default class Schema{
 	constructor(schema){
 		this.inputSchema = schema
 		this.filledSchema = this.fill(schema)
-		this.roots = []
+		this.tree = null
 		this.tables = []
 		this.parse()
 	}
 
 	parse(){
-		this.roots = this.walk(this.filledSchema)
-			.children
-
+		this.tree = this.walk(this.filledSchema)
 		this.tables = this.tables
 			.slice(1)
-
-		//console.dir(this.roots, { depth: 5 })
 	}
 
 	walk(schema, previousNodes = []){
 		let previous = previousNodes.find(p => p.schema === schema)
 		let node = {}
-		let fields = []
-		let relations = []
+		let fields = {}
+		let relations = {}
 
 		if(previous)
 			return previous.node
@@ -34,19 +30,19 @@ export default class Schema{
 				let referenceKeys = this.findReferenceKeys(prop.items, schema)
 
 				if(referenceKeys.length === 0){
-					relations.push({
+					relations[key] = {
 						key,
 						schema: prop.items,
 						referenceKey: referenceKeys[0],
 						many: true,
-					})
+					}
 				}else if(referenceKeys.length === 1){
-					relations.push({
+					relations[key] = {
 						key,
 						schema: prop.items,
 						referenceKey: referenceKeys[0],
 						many: true,
-					})
+					}
 				}else{
 					console.log(referenceKeys)
 					throw 'conflicting relations'
@@ -55,42 +51,43 @@ export default class Schema{
 				let referenceKeys = this.findReferenceKeys(prop, schema)
 
 				if(referenceKeys.length === 0){
-					fields.push({
+					fields[key] = {
 						key,
 						type: 'integer'
-					})
+					}
 
-					relations.push({
+					relations[key] = {
 						key,
 						schema: prop
-					})
+					}
 				}else if(referenceKeys.length === 1){
-					relations.push({
+					relations[key] = {
 						key,
 						referenceKey: referenceKeys[0],
 						schema: prop
-					})
+					}
 				}else{
 					throw 'conflicting relations'
 				}
 			}else{
-				fields.push({
+				fields[key] = {
 					...prop, 
 					key
-				})
+				}
 			}
 		}
 
 		node.table = this.createTable({ fields, schema })
-		node.children = []
+		node.children = {}
 
 		previousNodes.push({ node, schema })
 
-		for(let { schema, ...relation } of relations){
-			node.children.push({
+		for(let { key, schema, ...relation } of Object.values(relations)){
+			node.children[key] = {
+				key,
 				...relation,
 				...this.walk(schema, previousNodes),
-			})
+			}
 		}
 
 		return node
@@ -147,7 +144,10 @@ export default class Schema{
 			}
 		}
 
-		for(let field of table.fields){
+		for(let [key, field] of Object.entries(table.fields)){
+			if(field.id)
+				table.idKey = key
+
 			field.required = field.required 
 				|| !schema.required 
 				|| schema.required.includes(field.key)

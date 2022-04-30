@@ -11,11 +11,11 @@ export default compile({
 	render: p => ({
 		sql: [
 			`SELECT *`,
-			`FROM "${p.table}"`,
+			`FROM "${p.from}"`,
 			p.orderBy ? `ORDER BY "${p.orderBy.field}" ${p.orderBy.dir}` : null,
 			p.limit ? `LIMIT @limit` : null
 		],
-		values: {
+		data: {
 			limit: p.limit
 		}
 	})

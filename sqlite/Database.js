@@ -20,6 +20,10 @@ export default class Database{
 		this.#open()
 	}
 
+	close(){
+		this.connection.close()
+	}
+
 	run(query){
 		let { sql, data } = query.render()
 
@@ -34,6 +38,14 @@ export default class Database{
 		return this.connection
 			.prepare(sql)
 			.get(data)
+	}
+
+	all(query){
+		let { sql, data } = query.render()
+
+		return this.connection
+			.prepare(sql)
+			.all(data)
 	}
 
 	#open(){
@@ -64,7 +76,7 @@ export default class Database{
 	#constructTable(schema){
 		let fields = []
 
-		for(let { key, type, required, id } of schema.fields){
+		for(let { key, type, required, id } of Object.values(schema.fields)){
 			let primary = false
 			let autoincrement = false
 			let notNull = required
