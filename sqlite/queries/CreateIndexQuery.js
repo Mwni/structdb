@@ -1,27 +1,19 @@
-export default class{
-	constructor(name, unique){
-		this.name = name
-		this.unique = unique
-	}
+import compile from './compileQuery.js'
 
-	on(table){
-		this.table = table
-		return this
-	}
-
-	fields(fields){
-		this.fields = fields
-		return this
-	}
-
-	sql(){
-		let f = this.fields
-			.map(field => `"${field}"`)
-
-		return `CREATE ${this.unique ? `UNIQUE INDEX` : `INDEX`} "${this.name}" ON "${this.table}" (${f.join(`, `)})`
-	}
-
-	values(){
-		return []
-	}
-}
+export default compile({
+	setters: {
+		name: x => x,
+		on: x => x,
+		unique: x => x,
+		fields: x => x,
+	},
+	render: p => ({
+		sql: [
+			`CREATE`,
+			p.unique ? `UNIQUE INDEX` : `INDEX`,
+			`"${p.name}"`,
+			`ON "${p.on}"`,
+			{ list: p.fields }
+		]
+	})
+})

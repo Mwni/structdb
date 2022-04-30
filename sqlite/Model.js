@@ -35,7 +35,7 @@ export default function compile({ database, config }){
 
 		async readOne({ where }){
 			let row = database.get(
-				new SelectQuery('*')
+				new SelectQuery()
 					.from(config.table.name)
 					.where(where)
 					.limit(1)

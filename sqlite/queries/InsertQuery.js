@@ -8,10 +8,11 @@ export default compile({
 	render: p => ({
 		sql: [
 			`INSERT`,
-			`INTO "${p.table}"`,
-			Object.keys(p.data).map(key => `"${key}"`),
+			`INTO "${p.into}"`,
+			{ list: Object.keys(p.data).map(key => `"${key}"`) },
 			`VALUES`,
-			Object.keys(p.data).map(key => `@${key}`)
-		]
+			{ list: Object.keys(p.data).map(key => `@${key}`) }
+		],
+		data: p.data
 	})
 })

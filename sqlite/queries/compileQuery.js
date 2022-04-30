@@ -5,11 +5,12 @@ export default function({ setters, render }){
 	for(let [key, transform] of Object.entries(setters)){
 		Query.prototype[key] = function(value){
 			data[key] = transform(value, data[key])
+			return this
 		}
 	}
 
-	Query.render = function(){
-		let { sql, values } = render(data)
+	Query.prototype.render = function(){
+		let { sql, data: renderedData } = render(data)
 		let ast = sql.slice()
 		let frags = []
 
@@ -18,15 +19,34 @@ export default function({ setters, render }){
 
 			if(!piece)
 				continue
-			else if(Array.isArray(piece))
+
+			if(Array.isArray(piece)){
 				ast = [...piece, ...ast]
-			else
-				frags.push(piece)
+				continue
+			}
+
+			if(typeof piece === 'object' && piece.list){
+				ast = [
+					`(`,
+					...piece.list
+						.map((item, i) => [i > 0 ? `,` : null, item]),
+					`)`,
+					...ast
+				]
+				continue
+			}
+
+			frags.push(piece)
 		}
+
+		console.log({ 
+			sql: frags.join(' '), 
+			data: renderedData
+		})
 
 		return { 
 			sql: frags.join(' '), 
-			values 
+			data: renderedData || {}
 		}
 	}
 

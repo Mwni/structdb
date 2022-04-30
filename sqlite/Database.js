@@ -21,17 +21,19 @@ export default class Database{
 	}
 
 	run(query){
-		console.log(query.sql())
+		let { sql, data } = query.render()
+
 		return this.connection
-			.prepare(query.sql())
-			.run(...query.values())
+			.prepare(sql)
+			.run(data)
 	}
 
 	get(query){
-		console.log(query.sql())
+		let { sql, data } = query.render()
+
 		return this.connection
-			.prepare(query.sql())
-			.get(...query.values())
+			.prepare(sql)
+			.get(data)
 	}
 
 	#open(){
@@ -54,7 +56,6 @@ export default class Database{
 	}
 
 	#construct(){
-
 		for(let table of this.schema.tables){
 			this.#constructTable(table)
 		}
@@ -84,13 +85,16 @@ export default class Database{
 		}
 
 		this.run(
-			new CreateTableQuery(schema.name)
+			new CreateTableQuery()
+				.name(schema.name)
 				.fields(fields)
 		)
 
 		for(let { name, unique, fields } of schema.indices){
 			this.run(
-				new CreateIndexQuery(name, unique)
+				new CreateIndexQuery()
+					.name(name)
+					.unique(unique)
 					.on(schema.name)
 					.fields(fields)
 			)

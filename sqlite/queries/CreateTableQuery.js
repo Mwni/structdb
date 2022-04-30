@@ -1,37 +1,22 @@
-import Query from './compileQuery.js'
+import compile from './compileQuery.js'
 
-
-export default class CreateTableQuery extends Query{
-	constructor(){
-		super()
-		this.setter('')
-	}
-
-	fields(fields){
-		this.fields = fields
-		return this
-	}
-
-	sql(){
-		let f = this.fields.map(field => {
-			let fragments = [`"${field.name}"`, typeMap[field.type]]
-			
-			if(field.notNull)
-				fragments.push(`NOT NULL`)
-	
-			if(field.primary)
-				fragments.push(`PRIMARY KEY`)
-	
-			if(field.autoincrement)
-				fragments.push(`AUTOINCREMENT`)
-	
-			return fragments.join(` `)
-		})
-	
-		return `CREATE TABLE "${this.name}" (${f.join(`, `)})`
-	}
-
-	values(){
-		return []
-	}
-}
+export default compile({
+	setters: {
+		name: x => x,
+		fields: x => x,
+	},
+	render: p => ({
+		sql: [
+			`CREATE TABLE "${p.name}"`,
+			{
+				list: p.fields.map(field => [
+					`"${field.name}"`,
+					field.type,
+					field.notNull ? `NOT NULL` : null,
+					field.primary ? `PRIMARY KEY` : null,
+					field.autoincrement ? `AUTOINCREMENT` : null
+				])
+			}
+		]
+	})
+})
