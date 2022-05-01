@@ -9,6 +9,7 @@ let client = new Client({
 })
 
 async function createIdea(){
+	debugger;
 	let idea = await client.ideas.createOne({
 		data: {
 			text: 'Wieso eigentlich nicht',
@@ -28,4 +29,5 @@ async function wipe(){
 
 await createIdea()
 	.catch(error => console.error(error))
-await wipe()
+
+//await wipe()

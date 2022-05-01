@@ -1,7 +1,7 @@
 import { Schema } from '@jxdb/core'
 import * as sql from './queries/SelectQuery.js'
-import compileModel from './Model.js'
 import Database from './Database.js'
+import View from './models/View.js'
 
 
 export default class Client{
@@ -12,28 +12,19 @@ export default class Client{
 	constructor({ file, schema }){
 		this.#schema = new Schema(schema)
 		this.#database = new Database({ file, schema: this.#schema })
-		this.#compileModel()
-		this.#exposeRoots()
+		this.#exposeViews()
 	}
 
 	async close(){
 		this.#database.close()
 	}
 
-	#compileModel(){
-		let { Instance } = compileModel({
-			database: this.#database,
-			config: this.#schema.tree
-		})
-
-		this.#model = new Instance({})
-	}
-
-	#exposeRoots(){
-		for(let key of Object.keys(this.#schema.tree.children)){
-			this[key] = this.#model[key]
+	#exposeViews(){
+		for(let [key, config] of Object.entries(this.#schema.tree.children)){
+			this[key] = new View({
+				database: this.#database,
+				config
+			})
 		}
-
-		console.log(this)
 	}
 }

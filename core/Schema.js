@@ -133,6 +133,7 @@ export default class Schema{
 				let name = `${table.name}Unique`
 
 				for(let field of fields){
+					table.fields[field].unique = table.fields[field].unique || true
 					name += field.slice(0, 1).toUpperCase() + field.slice(1)
 				}
 
