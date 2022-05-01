@@ -78,7 +78,7 @@ export default class View{
 			let relationToParent = this.#parent.config.children[this.#config.key]
 
 			if(relationToParent.referenceKey){
-
+				console.log('TODO')
 			}else{
 				let ids = [].concat(
 					...this.#parent.collection
