@@ -65,6 +65,10 @@ export default class View{
 		})
 	}
 
+	async readOne({ where = {}, include = {} }){
+		return (await this.readMany({ where, include, take: 1 }))[0]
+	}
+
 	async readMany({ where = {}, include = {}, take } = {}){
 		let query = new SelectQuery()
 			.from(this.#config.table.name)
@@ -107,25 +111,13 @@ export default class View{
 
 			}else{
 				for(let item of collection){
-					let data = children.find(child => child[childConf.table.idKey] === item[key])
-
-					if(data){
-						item[key] = new Instance({
-							data,
-							database: this.#database,
-							config: this.#config,
-							parent: this.#parent
-						})
-					}
+					item[key] = children
+						.find(child => child[childConf.table.idKey] === item[key])
 				}
 			}
 		}
 
 		return collection
-	}
-
-	async readOne({ where = {}, include = {} }){
-		return (await this.readMany({ where, include, take: 1 }))[0]
 	}
 
 	get [Symbol.toStringTag]() {

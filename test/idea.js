@@ -9,7 +9,6 @@ let client = new Client({
 })
 
 async function createIdea(){
-	debugger;
 	let idea = await client.ideas.createOne({
 		data: {
 			text: 'Wieso eigentlich nicht',
@@ -20,6 +19,10 @@ async function createIdea(){
 	})
 
 	console.log('created idea:', idea)
+
+	let allIdeas = await idea.user.ideas.readMany()
+
+	console.log('all ideas:', allIdeas)
 }
 
 async function wipe(){

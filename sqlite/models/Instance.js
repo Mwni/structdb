@@ -18,7 +18,7 @@ export default class Instance{
 				continue
 
 			let view = new View({ 
-				database: this.#database,
+				database,
 				parent: { 
 					collection: [this],
 					config,

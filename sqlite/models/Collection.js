@@ -13,14 +13,14 @@ export default class Collection extends Array{
 
 		let { items, database, config } = arg
 
-		super(...items.map(item => new Instance({ data: item, config })))
+		super(...items.map(item => new Instance({ data: item, database, config })))
 
 		this.#database = database
 		this.#config = config
 		
 		for(let child of Object.values(config.children)){
 			let view = new View({ 
-				database: this.#database,
+				database,
 				config: child,
 				parent: {
 					collection: this,
