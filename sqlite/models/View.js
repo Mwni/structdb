@@ -78,7 +78,16 @@ export default class View{
 			let relationToParent = this.#parent.config.children[this.#config.key]
 
 			if(relationToParent.referenceKey){
-				console.log('TODO')
+				let ids = [].concat(
+					...this.#parent.collection
+						.map(row => row[this.#parent.config.table.idKey])
+				)
+
+				query.where({
+					[relationToParent.referenceKey]: {
+						in: ids
+					}
+				})
 			}else{
 				let ids = [].concat(
 					...this.#parent.collection
