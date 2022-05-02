@@ -1,4 +1,4 @@
-import { Schema } from '@jxdb/core'
+import { Schema } from '@structdb/core'
 import * as sql from './queries/SelectQuery.js'
 import Database from './Database.js'
 import View from './models/View.js'

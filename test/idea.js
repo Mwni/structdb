@@ -1,5 +1,5 @@
 import fs from 'fs/promises'
-import { Client } from '@jxdb/sqlite'
+import { Client } from '@structdb/sqlite'
 
 let schemaString = await fs.readFile('schema.json')
 let schemaJson = JSON.parse(schemaString)

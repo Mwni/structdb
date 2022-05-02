@@ -1,4 +1,4 @@
-import SelectQuery from "@jxdb/sqlite/queries/SelectQuery.js";
+import SelectQuery from "@structdb/sqlite/queries/SelectQuery.js";
 
 let query = new SelectQuery()
 	.from('Test')
