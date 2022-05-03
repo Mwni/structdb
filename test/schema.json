@@ -36,6 +36,9 @@
 					"items": {
 						"$ref": "#/definitions/Idea"
 					}
+				},
+				"meta": {
+					"type": "any"
 				}
 			},
 			"required": ["nick"],

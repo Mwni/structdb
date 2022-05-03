@@ -13,16 +13,19 @@ async function createIdea(){
 		data: {
 			text: 'Wieso eigentlich nicht',
 			user: {
-				nick: 'Mwni'
+				nick: 'Mwni',
+				meta: {
+					lol: 1
+				}
 			}
 		}
 	})
 
 	console.log('created idea:', idea)
 
-	let allIdeas = await idea.user.ideas.readMany()
+	//let allIdeas = await idea.user.ideas.readMany()
 
-	console.log('all ideas:', allIdeas)
+	//console.log('all ideas:', allIdeas)
 }
 
 async function wipe(){
@@ -33,4 +36,4 @@ async function wipe(){
 await createIdea()
 	.catch(error => console.error(error))
 
-//await wipe()
+await wipe()
