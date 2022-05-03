@@ -8,20 +8,57 @@ const typeMap = {
 	"integer": "INTEGER",
 	"string": "TEXT",
 	"number": "REAL",
-	"bigint": "BIGINT",
-	"blob": "BLOB"
+	"boolean": "INTEGER",
+	"blob": "BLOB",
+	"any": "TEXT"
 }
 
 
 export default class Database{
-	constructor({ file, schema }){
+	#inTx
+
+	constructor({ file, schema, journalMode }){
 		this.file = file
 		this.schema = schema
+		this.journalMode = journalMode
+		this.connection = null
 		this.#open()
 	}
 
 	close(){
 		this.connection.close()
+	}
+
+	tx(executor){
+		if(this.#inTx)
+			return executor()
+
+		this.connection.exec('BEGIN IMMEDIATE')
+		this.#inTx = true
+		
+		try{
+			var ret = executor()
+
+			if(ret instanceof Promise){
+				ret
+					.then(ret => {
+						this.connection.exec('COMMIT')
+					})
+					.catch(error => {
+						throw error
+					})
+			}else{
+				this.connection.exec('COMMIT')
+			}
+		}catch(error){
+			this.connection.exec('ROLLBACK')
+
+			throw error
+		}finally{
+			this.#inTx = false
+		}
+
+		return ret
 	}
 
 	run(query){
@@ -54,6 +91,10 @@ export default class Database{
 		try{
 			this.connection = new NativeDB(this.file)
 
+			if(this.journalMode){
+				this.connection.pragma(`journal_mode = ${this.journalMode}`)
+			}
+
 			if(startedBlank)
 				this.#construct()
 		}catch(error){
@@ -76,7 +117,7 @@ export default class Database{
 	#constructTable(schema){
 		let fields = []
 
-		for(let { key, type, required, id } of Object.values(schema.fields)){
+		for(let { key, type, required, id, default: defaultValue } of Object.values(schema.fields)){
 			let primary = false
 			let autoincrement = false
 			let notNull = required
@@ -93,6 +134,7 @@ export default class Database{
 				notNull,
 				primary,
 				autoincrement,
+				default: defaultValue
 			})
 		}
 

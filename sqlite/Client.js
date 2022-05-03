@@ -9,14 +9,18 @@ export default class Client{
 	#database
 	#model
 
-	constructor({ file, schema }){
+	constructor({ file, schema, journalMode }){
 		this.#schema = new Schema(schema)
-		this.#database = new Database({ file, schema: this.#schema })
+		this.#database = new Database({ file, schema: this.#schema, journalMode })
 		this.#exposeViews()
 	}
 
 	async close(){
 		this.#database.close()
+	}
+
+	async tx(executor){
+		return await this.#database.tx(async () => await executor(this))
 	}
 
 	#exposeViews(){

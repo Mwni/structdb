@@ -19,6 +19,7 @@ export default class View{
 	async createOne({ data: inputData, include = {}, conflict = {} }){
 		let tableData = {}
 
+
 		for(let [key, value] of Object.entries(inputData)){
 			let childConf = this.#config.children[key]
 			let fieldConf = this.#config.table.fields[key]
@@ -36,9 +37,15 @@ export default class View{
 				tableData[key] = leafInstance[childConf.table.idKey]
 				include[key] = true
 			}else if(fieldConf){
-				tableData[key] = inputData[key]
+				if(fieldConf.type === 'boolean')
+					value = value ? 1 : 0
+				else if(fieldConf.type === 'any')
+					value = JSON.stringify(value)
+
+				tableData[key] = value
 			}
 		}
+
 
 		let where = {}
 		let { lastInsertRowid } = this.#database.run(
@@ -48,7 +55,7 @@ export default class View{
 				.upsert(true)
 		)
 
-		if(lastInsertRowid > 0){
+		if(lastInsertRowid > 0 && false){
 			where.rowid = lastInsertRowid
 		}else{
 			for(let key of Object.keys(tableData)){
@@ -104,6 +111,7 @@ export default class View{
 
 		if(take)
 			query.limit(take)
+
 
 		let collection = new Collection({
 			items: this.#database.all(query),
