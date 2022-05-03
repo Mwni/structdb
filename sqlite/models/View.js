@@ -24,6 +24,10 @@ export default class View{
 			let childConf = this.#config.children[key]
 			let fieldConf = this.#config.table.fields[key]
 
+			if(value === undefined || value === null)
+				continue
+
+
 			if(childConf){
 				let leafView = new View({
 					database: this.#database,
