@@ -34,10 +34,10 @@ export default function({ setters, render }){
 				frags.push(piece)
 			}
 
-			console.log({ 
+			/*console.log({ 
 				sql: frags.join(' '), 
 				data: renderedData
-			})
+			})*/
 
 			return { 
 				sql: frags.join(' '), 

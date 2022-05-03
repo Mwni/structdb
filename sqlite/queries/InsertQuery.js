@@ -1,4 +1,4 @@
-import compile from './compileQuery.js'
+import compile from './lib/compile.js'
 
 export default compile({
 	setters: {
