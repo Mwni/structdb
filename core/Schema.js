@@ -124,6 +124,8 @@ export default class Schema{
 				[0]
 		}
 
+		
+
 		if(schema.unique){
 			let uniques = Array.isArray(schema.unique[0])
 				? schema.unique
@@ -152,9 +154,6 @@ export default class Schema{
 			field.required = field.required 
 				|| !schema.required 
 				|| schema.required.includes(field.key)
-
-			field.default = field.default 
-				|| schema.default 
 		}
 		
 		return table

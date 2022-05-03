@@ -1,4 +1,4 @@
-import compile from './compileQuery.js'
+import compile from './lib/compile.js'
 
 export default compile({
 	setters: {
@@ -14,7 +14,8 @@ export default compile({
 					field.type,
 					field.notNull ? `NOT NULL` : null,
 					field.primary ? `PRIMARY KEY` : null,
-					field.autoincrement ? `AUTOINCREMENT` : null
+					field.autoincrement ? `AUTOINCREMENT` : null,
+					field.default !== undefined ? `DEFAULT ${JSON.stringify(field.default)}` : null
 				])
 			}
 		]
