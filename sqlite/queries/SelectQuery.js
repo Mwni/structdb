@@ -7,7 +7,7 @@ export default compile({
 		fields: x => x,
 		from: x => x,
 		where: (where, previous = {}) => ({...previous, ...where}),
-		orderBy: (field, dir) => ({ field, dir }),
+		orderBy: (orderBy, previous = {}) => ({...previous, ...orderBy}),
 		limit: x => x,
 		offset: x => x,
 	},
@@ -20,7 +20,16 @@ export default compile({
 				p.fields ? p.fields.map(field => `"${field}"`).join(', ') : '*',
 				`FROM "${p.from}"`,
 				whereSql ? [`WHERE`, whereSql] : null,
-				p.orderBy ? `ORDER BY "${p.orderBy.field}" ${p.orderBy.dir}` : null,
+				p.orderBy 
+					? [
+						`ORDER BY`,
+						{
+							list: Object.entries(p.orderBy)
+								.map(([key, dir]) => `"${key}" ${dir.toUpperCase()}`),
+							braces: false
+						}
+					]
+					: null,
 				p.limit ? `LIMIT @limit` : null
 			],
 			data: {

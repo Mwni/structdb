@@ -76,11 +76,11 @@ export default class View{
 		})
 	}
 
-	async readOne({ where = {}, include = {} }){
-		return (await this.readMany({ where, include, take: 1 }))[0]
+	async readOne({ where = {}, include = {}, last = false }){
+		return (await this.readMany({ where, include, take: last ? -1 : 1 }))[0]
 	}
 
-	async readMany({ where = {}, include = {}, take } = {}){
+	async readMany({ where = {}, include = {}, orderBy, take } = {}){
 		let query = new SelectQuery()
 			.from(this.#config.table.name)
 			.where(where)
@@ -113,8 +113,23 @@ export default class View{
 			}
 		}
 
-		if(take)
+		orderBy = orderBy || { rowid: 'asc' }
+
+		if(take){
+			if(take < 0){
+				take *= -1
+				
+				for(let [key, dir] of Object.entries(orderBy)){
+					orderBy[key] = dir === 'asc' ? 'desc' : 'asc'
+				}
+			}
+
 			query.limit(take)
+		}
+
+		if(orderBy){
+			query.orderBy(orderBy)
+		}
 
 
 		let collection = new Collection({
