@@ -29,6 +29,10 @@ export default class Database{
 		this.connection.close()
 	}
 
+	compact(){
+		this.connection.pragma('wal_checkpoint(TRUNCATE)')
+	}
+
 	tx(executor){
 		if(this.#inTx)
 			return executor()

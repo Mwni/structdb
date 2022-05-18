@@ -71,7 +71,6 @@ export default class Instance{
 
 				tableData[key] = value
 			}
-
 		}
 
 		this.#database.run(

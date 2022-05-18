@@ -19,6 +19,10 @@ export default class Client{
 		this.#database.close()
 	}
 
+	async compact(){
+		this.#database.compact()
+	}
+
 	async tx(executor){
 		return await this.#database.tx(async () => await executor(this))
 	}
