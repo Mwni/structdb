@@ -4,6 +4,7 @@ import { compose as composeWhere } from './lib/where.js'
 
 export default compile({
 	setters: {
+		distinct: x => x,
 		fields: x => x,
 		from: x => x,
 		where: (where, previous = {}) => ({...previous, ...where}),
@@ -17,6 +18,7 @@ export default compile({
 		return {
 			sql: [
 				`SELECT`,
+				p.distinct ? `DISTINCT` : null,
 				p.fields ? p.fields.map(field => `"${field}"`).join(', ') : '*',
 				`FROM "${p.from}"`,
 				whereSql ? [`WHERE`, whereSql] : null,

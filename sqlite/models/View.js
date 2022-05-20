@@ -80,7 +80,7 @@ export default class View{
 		return (await this.readMany({ where, include, take: last ? -1 : 1 }))[0]
 	}
 
-	async readMany({ where = {}, include = {}, orderBy, take } = {}){
+	async readMany({ where = {}, include = {}, select, distinct, orderBy, take } = {}){
 		let query = new SelectQuery()
 			.from(this.#config.table.name)
 			.where(where)
@@ -112,6 +112,16 @@ export default class View{
 				})
 			}
 		}
+
+
+		if(select){
+			query.fields(Object.keys(select))
+		}
+
+		if(distinct){
+			query.distinct(true)
+		}
+
 
 		orderBy = orderBy || { rowid: 'asc' }
 
