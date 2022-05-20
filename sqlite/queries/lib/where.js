@@ -54,6 +54,10 @@ function aggregate(level, data){
 			})
 		}else{
 			list.push(`${key} ${operators[operator]} @${key}`)
+
+			if(typeof value === 'boolean')
+				value = value ? 1 : 0
+
 			data[key] = value
 		}
 	}
