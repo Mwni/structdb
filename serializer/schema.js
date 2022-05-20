@@ -1,4 +1,4 @@
-export function deriveBlueprint(schema){
+export default function(schema){
 	if(schema.type === 'object'){
 		let properties = Object.entries(schema.properties)
 			.map(([ key, schema ]) => ({ key, schema: deriveBlueprint(schema) }))

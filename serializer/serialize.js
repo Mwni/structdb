@@ -1,13 +1,13 @@
 const utf8 = new TextEncoder()
 
 
-export function encode(data, schema){
+export function serialize(data, schema){
 	this.methods[schema.type].call(this, data, schema)
 }
 
 export function object(data, schema){
 	for(let prop of schema.staticProperties){
-		encode.call(this, data[prop.key], prop.schema)
+		serialize.call(this, data[prop.key], prop.schema)
 	}
 }
 
@@ -15,7 +15,7 @@ export function array(data, schema){
 	writeSize.call(this, data.length)
 
 	for(let item of data){
-		encode.call(this, item, schema.items)
+		serialize.call(this, item, schema.items)
 	}
 }
 

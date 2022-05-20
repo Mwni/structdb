@@ -1,7 +1,7 @@
 const utf8 = new TextDecoder()
 
 
-export function decode(schema){
+export function deserialize(schema){
 	return this.methods[schema.type].call(this, schema)
 }
 
@@ -9,7 +9,7 @@ export function object(schema){
 	let object = {}
 
 	for(let prop of schema.staticProperties){
-		object[prop.key] = decode.call(this, prop.schema)
+		object[prop.key] = deserialize.call(this, prop.schema)
 	}
 
 	return object
@@ -20,7 +20,7 @@ export function array(schema){
 	let array = []
 
 	for(let i=0; i<length; i++){
-		array.push(decode.call(this, schema.items))
+		array.push(deserialize.call(this, schema.items))
 	}
 
 	return array
