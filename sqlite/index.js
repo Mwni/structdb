@@ -1,1 +1,1 @@
-export { default as Client } from './Client.js'
+export { open } from './client.js'

@@ -1,6 +1,3 @@
-import { deepCompare } from './utils.js'
-
-
 export function parse(schema){
 	let tables = []
 

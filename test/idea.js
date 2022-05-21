@@ -1,9 +1,9 @@
 import fs from 'fs/promises'
-import { Client } from '@structdb/sqlite'
+import { open } from '@structdb/sqlite'
 
 let schemaString = await fs.readFile('schema.json')
 let schemaJson = JSON.parse(schemaString)
-let client = new Client({
+let client = open({
 	file: 'test.db',
 	schema: schemaJson
 })
@@ -30,7 +30,7 @@ async function createIdea(){
 
 async function wipe(){
 	await client.close()
-	await fs.unlink('test.db')
+	//await fs.unlink('test.db')
 }
 
 await createIdea()
