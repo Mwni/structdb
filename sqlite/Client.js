@@ -8,16 +8,19 @@ import { create as createModel } from './model.js'
 export function open({ file, schema, ...options }){
 	let { tree, tables } = parseSchema(schema)
 	let database = openDatabase({ file, ...options })
+	let models = {}
 
 	if(database.blank){
 		constructTables({ database, tables })
 	}
 
 	for(let [key, config] of Object.entries(tree.children)){
-		this[key] = createModel({ database, config })
+		models[key] = createModel({ database, config })
 	}
 
 	return {
+		...models,
+
 		async close(){
 			database.close()
 		},

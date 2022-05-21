@@ -66,6 +66,8 @@ export function open({ file, journalMode }){
 	
 		run(query){
 			let { text, values } = query.toParam()
+
+			console.log(text, values)
 	
 			return connection
 				.prepare(text)
@@ -82,6 +84,8 @@ export function open({ file, journalMode }){
 	
 		all(query){
 			let { text, values } = query.toParam()
+
+			console.log(text, values)
 	
 			return connection
 				.prepare(text)
