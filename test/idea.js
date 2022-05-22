@@ -23,6 +23,16 @@ async function createIdea(){
 
 	console.log('created idea:', idea)
 
+	let refoundIdea = await client.ideas.loadMany({
+		where: {
+			user: {
+				nick: 'Mwni'
+			}
+		}
+	})
+
+	console.log('found idea:', refoundIdea)
+
 	//let allIdeas = await idea.user.ideas.readMany()
 
 	//console.log('all ideas:', allIdeas)

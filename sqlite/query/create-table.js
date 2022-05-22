@@ -26,14 +26,19 @@ class CreateFieldBlock extends squel.cls.Block {
  
 	_toParamString (options) {
 		let str = this._fields
-			.map(field => [
-				`"${field.name}"`,
-				field.type,
-				field.notNull ? `NOT NULL` : ``,
-				field.primary ? `PRIMARY KEY` : ``,
-				field.autoincrement ? `AUTOINCREMENT` : ``,
-				field.default !== undefined ? `DEFAULT ${JSON.stringify(field.default)}` : ``
-			].join(' '))
+			.map(
+				field => 
+				[
+					`"${field.name}"`,
+					field.type,
+					field.notNull ? `NOT NULL` : ``,
+					field.primary ? `PRIMARY KEY` : ``,
+					field.autoincrement ? `AUTOINCREMENT` : ``,
+					field.default !== undefined ? `DEFAULT ${JSON.stringify(field.default)}` : ``
+				]
+				.join(' ')
+				.replace(/ +/, ' ')
+			)
 			.join(', ')
  
 		return {

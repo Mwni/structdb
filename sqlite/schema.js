@@ -132,17 +132,13 @@ export function parse(schema){
 	}
 
 	return {
-		tree: walk(unfold(schema)),
+		tree: walk(unfold(schema, schema)),
 		tables: tables.slice(1)
 	}
 }
 
 export function unfold(schema, node, previousRefNodes = []){
-	node = node || schema
-
-	if(Array.isArray(node)){
-		return node.map(element => unfold(schema, element, previousRefNodes))
-	}else if(node && typeof node === 'object'){
+	if(node && typeof node === 'object'){
 		let refUrl = node['$ref']
 
 		if(refUrl){

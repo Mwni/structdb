@@ -12,7 +12,7 @@ export function open({ file, journalMode }){
 		connection = new DatabaseAdapter(file)
 
 		if(journalMode){
-			this.connection.pragma(`journal_mode = ${journalMode}`)
+			connection.pragma(`journal_mode = ${journalMode}`)
 		}
 	}catch(error){
 		connection.close()
