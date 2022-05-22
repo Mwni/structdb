@@ -1,15 +1,14 @@
 import qb from './query/index.js'
 
 
-export function create({ database, config }){
+export function create({ database, struct }){
 	
-
 	return {
 		async createOne(args){
 			return await createDeep({
 				...args,
 				database,
-				config
+				struct
 			})
 		},
 
@@ -19,7 +18,7 @@ export function create({ database, config }){
 					...args,
 					take: args.last ? -1 : 1,
 					database,
-					config
+					struct
 				})
 			)[0]
 		},
@@ -28,7 +27,7 @@ export function create({ database, config }){
 			return await readDeep({
 				...args,
 				database,
-				config
+				struct
 			})
 		}
 	}
@@ -36,23 +35,20 @@ export function create({ database, config }){
 
 
 
-async function createDeep({ database, config, data: inputData, include = {}, conflict = {} }){
+async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
 	let postInsertWhere = {}
 	let insertQuery = qb.upsert()
-		.into(config.table.name)
+		.into(struct.table.name)
 
 	for(let [key, value] of Object.entries(inputData)){
-		let childConf = config.children[key]
-		let fieldConf = config.table.fields[key]
+		let childConf = struct.nodes[key]
+		let fieldConf = struct.table.fields[key]
 
-		if(value === undefined || value === null)
-			continue
-
-		if(childConf){
+		if(childConf && value){
 			let childInstance = await createDeep({
 				database,
-				config: childConf,
+				struct: childConf,
 				include: {},
 				data: value,
 			})
@@ -60,20 +56,19 @@ async function createDeep({ database, config, data: inputData, include = {}, con
 			tableData[key] = childInstance[childConf.table.idKey]
 			include[key] = true
 		}else if(fieldConf){
-			if(fieldConf.type === 'boolean')
-				value = value ? 1 : 0
-			else if(fieldConf.type === 'any')
-				value = JSON.stringify(value)
-
 			tableData[key] = value
 		}
 	}
 
-	insertQuery.setFields(tableData)
-	database.run(insertQuery)
+	database.run(
+		insertQuery
+			.setFields(
+				struct.encode(tableData)
+			)
+	)
 
 	for(let key of Object.keys(tableData)){
-		let field = config.table.fields[key]
+		let field = struct.table.fields[key]
 		
 		if(field.id || field.unique)
 			postInsertWhere[key] = tableData[key]
@@ -81,40 +76,40 @@ async function createDeep({ database, config, data: inputData, include = {}, con
 
 	return (await readDeep({
 		database,
-		config,
+		struct,
 		include: inputData,
 		where: postInsertWhere,
-		take: 1
+		take: -1
 	}))[0]
 }
 
-async function readDeep({ database, config, forParent, where = {}, select, include = {}, distinct, orderBy, take }){
+async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, take }){
 	orderBy = orderBy || { rowid: 'asc' }
 
 	if(forParent){
-		let { items: parentItems, config: parentConfig } = forParent
-		let relationToParent = parentConfig.children[config.key]
+		let { items: parentItems, struct: parentStruct } = forParent
+		let relationToParent = parentStruct.nodes[struct.key]
 
 		if(relationToParent.referenceKey){
 			let ids = [].concat(
 				...parentItems
-					.map(row => row[parentConfig.table.idKey])
+					.map(row => row[parentStruct.table.idKey])
 			)
 
 			where[relationToParent.referenceKey] = { in: ids }
 		}else{
 			let ids = [].concat(
 				...parentItems
-					.map(row => row[config.key])
+					.map(row => row[struct.key])
 			)
 
-			where[config.table.idKey] = { in: ids }
+			where[struct.table.idKey] = { in: ids }
 		}
 	}
 	
 	let selectQuery = qb.select()
-		.from(config.table.name)
-		.where(composeFilter({ where, config }))
+		.from(struct.table.name)
+		.where(composeFilter({ where, struct }))
 
 	if(distinct){
 		selectQuery = selectQuery.distinct()
@@ -136,29 +131,32 @@ async function readDeep({ database, config, forParent, where = {}, select, inclu
 	}
 
 	let items = database.all(selectQuery)
-		
-	for(let [key, selection] of Object.entries(include)){
-		let childConf = config.children[key]
+		.map(row => struct.decode(row))
+	
+	if(include){
+		for(let [key, selection] of Object.entries(include)){
+			let childConf = struct.nodes[key]
 
-		if(!childConf)
-			continue
+			if(!childConf)
+				continue
 
-		let children = await readDeep({
-			database,
-			config: childConf,
-			include: selection,
-			forParent: {
-				items,
-				config
-			}
-		})
+			let children = await readDeep({
+				database,
+				struct: childConf,
+				include: selection,
+				forParent: {
+					items,
+					struct
+				}
+			})
 
-		if(childConf.referenceKey){
-
-		}else{
-			for(let item of items){
-				item[key] = children
-					.find(child => child[childConf.table.idKey] === item[key])
+			if(childConf.referenceKey){
+				
+			}else{
+				for(let item of items){
+					item[key] = children
+						.find(child => child[childConf.table.idKey] === item[key])
+				}
 			}
 		}
 	}
@@ -166,41 +164,45 @@ async function readDeep({ database, config, forParent, where = {}, select, inclu
 	return items
 }
 
-function composeFilter({ where, config }){
-	console.log('compose', where)
-
+function composeFilter({ where, struct }){
 	let expr = qb.expr()
 	let { AND, OR } = where
 	
 	if(AND){
 		for(let condition of AND){
-			expr = expr.and(composeFilter({ where: condition, config }))
+			expr = expr.and(composeFilter({ where: condition, struct }))
 		}
 	}
 
 	if(OR){
 		for(let condition of OR){
-			expr = expr.or(composeFilter({ where: condition, config }))
+			expr = expr.or(composeFilter({ where: condition, struct }))
 		}
 	}
+
+	let fields = []
+	let subqueries = []
 	
 	for(let [key, value] of Object.entries(where)){
-		let fieldConf = config.table.fields[key]
-		let childConf = config.children[key]
+		let fieldConf = struct.table.fields[key]
+		let childConf = struct.nodes[key]
 		let operator = '='
 
 		if(childConf && typeof value === 'object'){
 			let subFilter = composeFilter({
 				where: value,
-				config: childConf
+				struct: childConf
 			})
 
-			value = qb.select()
-				.field(childConf.table.idKey)
-				.from(childConf.table.name)
-				.where(subFilter)
-				.limit(1)
-
+			subqueries.push({
+				key,
+				operator,
+				query: qb.select()
+					.field(childConf.table.idKey)
+					.from(childConf.table.name)
+					.where(subFilter)
+					.limit(1)
+			})
 		}else if(fieldConf){
 			if(value.in){
 				value = value.in
@@ -211,9 +213,28 @@ function composeFilter({ where, config }){
 				value = value.like
 				operator = 'LIKE'
 			}
-		}
 
-		expr = expr.and(`"${key}" ${operator} ?`, value)
+			fields.push({ 
+				key, 
+				operator, 
+				value 
+			})
+		}
+	}
+
+	let encoded = struct.encode(
+		fields.reduce(
+			(data, { key, value }) => ({ ...data, [key]: value }),
+			{}
+		)
+	)
+
+	for(let { key, operator } of fields){
+		expr = expr.and(`"${key}" ${operator} ?`, encoded[key])
+	}
+
+	for(let { key, operator, query } of subqueries){
+		expr = expr.and(`"${key}" ${operator} ?`, query)
 	}
 	
 

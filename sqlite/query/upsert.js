@@ -16,6 +16,7 @@ export default class UpsertQuery extends squel.cls.QueryBuilder{
 		this.setFields = fields => {
 			this.insertSetFields(fields)
 			this.setUpsertKeys(Object.keys(fields))
+			return this
 		}
 	}
 }

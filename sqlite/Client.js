@@ -1,12 +1,12 @@
-import { parse as parseSchema } from './schema.js'
+import { generate as generateStruct } from './struct.js'
 import { open as openDatabase } from './database.js'
 import { construct as constructTables } from './construction.js'
 import { create as createModel } from './model.js'
+import databaseCodecs from './codecs/index.js'
 
 
-
-export function open({ file, schema, ...options }){
-	let { tree, tables } = parseSchema(schema)
+export function open({ file, schema, codecs = [], ...options }){
+	let { struct, tables } = generateStruct({ schema, codecs: [...databaseCodecs, ...codecs] })
 	let database = openDatabase({ file, ...options })
 	let models = {}
 
@@ -14,12 +14,12 @@ export function open({ file, schema, ...options }){
 		constructTables({ database, tables })
 	}
 
-	for(let [key, config] of Object.entries(tree.children)){
-		models[key] = createModel({ database, config })
+	for(let [key, node] of Object.entries(struct.nodes)){
+		models[key] = createModel({ database, struct: node })
 	}
 
 	return {
-		...models,
+		...models, 
 
 		async close(){
 			database.close()

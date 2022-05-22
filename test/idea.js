@@ -23,7 +23,7 @@ async function createIdea(){
 
 	console.log('created idea:', idea)
 
-	let refoundIdea = await client.ideas.loadMany({
+	let refoundIdea = await client.ideas.readOne({
 		where: {
 			user: {
 				nick: 'Mwni'

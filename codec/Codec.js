@@ -1,36 +1,46 @@
-import { deriveBlueprint } from './schema.js'
-import * as encodeMethods from './encode.js'
-import * as decodeMethods from './decode.js'
+export function create({ schema, codecs }){
+	let fieldEncoders = {}
+	let fieldDecoders = {}
 
+	for(let [key, prop] of Object.entries(schema.properties)){
+		let def = codecs.find(codec => {
+			if(codec.acceptsType && codec.acceptsType !== prop.type)
+				return false
 
-export default class Codec{
-	constructor(schema){
-		this.schema = deriveBlueprint(schema)
-		this.buffer = new ArrayBuffer(1000000)
-		this.view = new DataView(this.buffer)
+			if(codec.acceptsFormat && codec.acceptsFormat !== prop.format)
+				return false
+
+			return true
+		})
+
+		if(!def)
+			continue
+
+		fieldEncoders[key] = def.encode
+		fieldDecoders[key] = def.decode
 	}
 
-	encode(data){
-		let state = {
-			view: this.view,
-			buffer: this.buffer,
-			offset: 0,
-			methods: encodeMethods
+	return {
+		encode(data){
+			let encoded = { ...data }
+
+			for(let [k, v] of Object.entries(data)){
+				if(k in fieldEncoders)
+					encoded[k] = fieldEncoders[k](v)
+			}
+
+			return encoded
+		},
+
+		decode(data){
+			let decoded = { ...data }
+
+			for(let [k, v] of Object.entries(data)){
+				if(k in fieldDecoders)
+					decoded[k] = fieldDecoders[k](v)
+			}
+
+			return decoded
 		}
-
-		encodeMethods.encode.call(state, data, this.schema)
-
-		return this.buffer.slice(0, state.offset)
-	}
-
-	decode(buffer){
-		let state = {
-			view: new DataView(buffer),
-			buffer: buffer,
-			offset: 0,
-			methods: decodeMethods
-		}
-		
-		return decodeMethods.decode.call(state, this.schema)
 	}
 }

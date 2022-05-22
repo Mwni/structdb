@@ -2,5 +2,5 @@
 	"name": "@structdb/codec",
 	"type": "module",
 	"version": "1.0.0-alpha",
-	"main": "Codec.js"
+	"main": "codec.js"
 }
