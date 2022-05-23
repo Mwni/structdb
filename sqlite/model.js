@@ -29,6 +29,35 @@ export function create({ database, struct }){
 				database,
 				struct
 			})
+		},
+
+		async iter(args){
+			return {
+				[Symbol.asyncIterator]() {
+					let offset = 0
+					let limit = Math.abs(args.take || Infinity)
+					
+					return {
+						async next(){
+							let slice = await readDeep({
+								...args,
+								skip: offset++,
+								take: Math.sign(args.take || 1),
+								database,
+								struct
+							})
+	
+							if(slice.length === 0 || --limit === 0)
+								return { done: true }
+	
+							return {
+								done: false,
+								value: slice[0]
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -83,7 +112,7 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 	}))[0]
 }
 
-async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, take }){
+async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, skip, take }){
 	orderBy = orderBy || { rowid: 'asc' }
 
 	if(forParent){
@@ -124,6 +153,10 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 			
 			selectQuery = selectQuery.order(key, finalAsc)
 		}
+	}
+
+	if(skip){
+		selectQuery = selectQuery.offset(skip)
 	}
 	
 	if(take){
