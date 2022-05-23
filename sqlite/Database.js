@@ -1,5 +1,6 @@
 import fs from 'fs'
 import DatabaseAdapter from 'better-sqlite3'
+import InternalSQLError from './errors/internal-sql.js'
 
 
 
@@ -17,6 +18,17 @@ export function open({ file, journalMode }){
 	}catch(error){
 		connection.close()
 		throw error
+	}
+
+	function prepare(sql){
+		try{
+			return connection.prepare(sql)
+		}catch(error){
+			throw new InternalSQLError({
+				message: error.message,
+				sql
+			})
+		}
 	}
 
 	return {
@@ -67,24 +79,21 @@ export function open({ file, journalMode }){
 		run(query){
 			let { text, values } = query.toParam()
 	
-			return connection
-				.prepare(text)
+			return prepare(text)
 				.run(values)
 		},
 	
 		get(query){
 			let { text, values } = query.toParam()
 	
-			return connection
-				.prepare(text)
+			return prepare(text)
 				.get(values)
 		},
 	
 		all(query){
 			let { text, values } = query.toParam()
 	
-			return connection
-				.prepare(text)
+			return prepare(text)
 				.all(values)
 		}
 	}
