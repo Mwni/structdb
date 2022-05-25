@@ -19,6 +19,7 @@ export function open({ file, schema, codecs = [], ...options }){
 	}
 
 	return {
+		file,
 		...models, 
 
 		async close(){

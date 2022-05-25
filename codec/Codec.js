@@ -3,15 +3,7 @@ export function create({ schema, codecs }){
 	let fieldDecoders = {}
 
 	for(let [key, prop] of Object.entries(schema.properties)){
-		let def = codecs.find(codec => {
-			if(codec.acceptsType && codec.acceptsType !== prop.type)
-				return false
-
-			if(codec.acceptsFormat && codec.acceptsFormat !== prop.format)
-				return false
-
-			return true
-		})
+		let def = select({ schema: prop, codecs })
 
 		if(!def)
 			continue
@@ -43,4 +35,16 @@ export function create({ schema, codecs }){
 			return decoded
 		}
 	}
+}
+
+export function select({ schema, codecs }){
+	return codecs.find(codec => {
+		if(codec.acceptsType && codec.acceptsType !== schema.type)
+			return false
+
+		if(codec.acceptsFormat && codec.acceptsFormat !== schema.format)
+			return false
+
+		return true
+	})
 }

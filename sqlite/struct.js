@@ -1,4 +1,4 @@
-import { create as createCodec } from '@structdb/codec'
+import { create as createCodec, select as selectCodec } from '@structdb/codec'
 
 
 export function generate({ schema, codecs }){
@@ -58,10 +58,16 @@ export function generate({ schema, codecs }){
 					throw 'conflicting relations'
 				}
 			}else{
-				fields[key] = {
+				let codec = selectCodec({ schema: prop, codecs })
+				let field = {
 					...prop, 
 					key
 				}
+
+				if(codec)
+					field.type = codec.returnsType
+
+				fields[key] = field
 			}
 		}
 
