@@ -5,6 +5,7 @@ const typeMap = {
 	"integer": "INTEGER",
 	"string": "TEXT",
 	"number": "REAL",
+	"bigint": "INTEGER",
 	"boolean": "INTEGER",
 	"blob": "BLOB",
 	"any": "TEXT"
