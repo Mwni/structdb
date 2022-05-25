@@ -132,6 +132,7 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 					.map(row => row[struct.key])
 			)
 
+
 			where[struct.table.idKey] = { in: ids }
 		}
 	}
@@ -140,8 +141,11 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 		.from(struct.table.name)
 		.where(composeFilter({ where, struct }))
 
+
 	if(distinct){
-		selectQuery = selectQuery.distinct()
+		selectQuery = selectQuery
+			.fields(distinct)
+			.distinct()
 	}
 
 	if(orderBy){
@@ -163,9 +167,11 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 		selectQuery = selectQuery.limit(Math.abs(take))
 	}
 
+
 	let items = database.all(selectQuery)
 		.map(row => struct.decode(row))
 	
+
 	if(include){
 		for(let [key, selection] of Object.entries(include)){
 			let childConf = struct.nodes[key]
