@@ -44,7 +44,7 @@ export function open({ file, journalMode }){
 			},
 	
 			close(){
-				connection.close()
+				connection.destroy()
 			},
 	
 			compact(){
