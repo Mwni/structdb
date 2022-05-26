@@ -1,6 +1,3 @@
-import qb from './query/index.js'
-
-
 export function create({ database, struct }){
 	
 	return {

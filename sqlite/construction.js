@@ -1,6 +1,3 @@
-import qb from './query/index.js'
-
-
 const typeMap = {
 	"integer": "INTEGER",
 	"string": "TEXT",
