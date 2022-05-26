@@ -5,13 +5,13 @@ import { create as createModel } from './model.js'
 import databaseCodecs from './codecs/index.js'
 
 
-export function open({ file, schema, codecs = [], ...options }){
+export async function open({ file, schema, codecs = [], ...options }){
 	let { struct, tables } = generateStruct({ schema, codecs: [...databaseCodecs, ...codecs] })
 	let database = openDatabase({ file, ...options })
 	let models = {}
 
 	if(database.blank){
-		constructTables({ database, tables })
+		await constructTables({ database, tables })
 	}
 
 	for(let [key, node] of Object.entries(struct.nodes)){
@@ -20,6 +20,7 @@ export function open({ file, schema, codecs = [], ...options }){
 
 	return {
 		file,
+		database,
 		...models, 
 
 		async close(){
