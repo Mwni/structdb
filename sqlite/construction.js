@@ -21,13 +21,14 @@ async function constructTable({ database, schema }){
 			let { key, type, required, id, default: defaultValue } = field
 			let column
 
-			if(id){
-				column = table
-					.primary(key)
-					.increments(key)
+			if(id && !defaultValue && !required){
+				column = table.increments(key)
 			}else{
 				column = table[typeMap[type]](key)
 			}
+
+			if(id)
+				column.primary(key)
 
 			if(required)
 				column.notNullable()
