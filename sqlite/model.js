@@ -71,7 +71,6 @@ export function create({ database, struct }){
 async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
 	let postInsertWhere = {}
-	let conflictableFields = []
 
 	for(let [key, value] of Object.entries(inputData)){
 		let childConf = struct.nodes[key]
@@ -90,23 +89,13 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 		}else if(fieldConf){
 			tableData[key] = value
 		}
-
-		if(fieldConf.id || fieldConf.unique)
-			conflictableFields.push(key)
 	}
 
-	let insertQuery = database
+	await database
 		.insert(struct.encode(tableData))
 		.into(struct.table.name)
-
-
-	if(conflictableFields.length > 0){
-		insertQuery = insertQuery
-			.onConflict(conflictableFields)
-			.merge()
-	}
-
-	await insertQuery
+		.onConflict()
+		.merge()
 
 	for(let key of Object.keys(tableData)){
 		let field = struct.table.fields[key]
