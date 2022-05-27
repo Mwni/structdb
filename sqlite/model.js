@@ -33,23 +33,30 @@ export function create({ database, struct }){
 				[Symbol.asyncIterator]() {
 					let offset = 0
 					let limit = Math.abs(args.take || Infinity)
+					let queue = []
 					
 					return {
 						async next(){
-							let slice = await readDeep({
-								...args,
-								skip: offset++,
-								take: Math.sign(args.take || 1),
-								database,
-								struct
-							})
-	
-							if(slice.length === 0 || --limit === 0)
-								return { done: true }
+							if(queue.length === 0){
+								let slice = await readDeep({
+									...args,
+									skip: offset,
+									take: Math.min(limit, Math.sign(args.take || 1) * 1000),
+									database,
+									struct
+								})
+		
+								if(slice.length === 0)
+									return { done: true }
+
+								limit -= slice.length
+								offset += slice.length
+								queue.push(...slice)
+							}
 	
 							return {
 								done: false,
-								value: slice[0]
+								value: queue.shift()
 							}
 						}
 					}
@@ -118,6 +125,9 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 }
 
 async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, skip, take }){
+	if(take === 0)
+		return []
+	
 	orderBy = orderBy || { rowid: 'asc' }
 
 	if(forParent){
@@ -171,10 +181,10 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	if(take){
 		selectQuery = selectQuery.limit(Math.abs(take))
 	}
-
+	
 	let items = (await selectQuery)
 		.map(row => struct.decode(row))
-		
+	
 
 	if(include){
 		for(let [key, selection] of Object.entries(include)){
@@ -200,6 +210,16 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 					item[key] = children
 						.find(child => child[childConf.table.idKey] === item[key])
 				}
+			}
+		}
+	}
+
+	for(let item of items){
+		for(let [key, value] of Object.entries(item)){
+			let childConf = struct.nodes[key]
+
+			if(childConf && typeof value === 'number'){
+				item[key] = { [childConf.table.idKey]: value }
 			}
 		}
 	}
