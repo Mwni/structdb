@@ -3,7 +3,7 @@ import { open } from '@structdb/sqlite'
 
 let schemaString = await fs.readFile('schema.json')
 let schemaJson = JSON.parse(schemaString)
-let client = open({
+let client = await open({
 	file: 'test.db',
 	schema: schemaJson
 })

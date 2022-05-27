@@ -31,6 +31,7 @@ async function constructTable({ database, schema }){
 
 			if(required)
 				column.notNullable()
+					
 
 			if(defaultValue)
 				column.defaultTo(defaultValue)

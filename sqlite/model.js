@@ -64,8 +64,7 @@ export function create({ database, struct }){
 async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
 	let postInsertWhere = {}
-	let insertQuery = qb.upsert()
-		.into(struct.table.name)
+	let conflictableFields = []
 
 	for(let [key, value] of Object.entries(inputData)){
 		let childConf = struct.nodes[key]
@@ -84,14 +83,23 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 		}else if(fieldConf){
 			tableData[key] = value
 		}
+
+		if(fieldConf.id || fieldConf.unique)
+			conflictableFields.push(key)
 	}
 
-	database.run(
-		insertQuery
-			.setFields(
-				struct.encode(tableData)
-			)
-	)
+	let insertQuery = database
+		.insert(struct.encode(tableData))
+		.into(struct.table.name)
+
+
+	if(conflictableFields.length > 0){
+		insertQuery = insertQuery
+			.onConflict(conflictableFields)
+			.merge()
+	}
+
+	await insertQuery
 
 	for(let key of Object.keys(tableData)){
 		let field = struct.table.fields[key]
@@ -133,26 +141,26 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 			where[struct.table.idKey] = { in: ids }
 		}
 	}
+
+
 	
-	let selectQuery = qb.select()
+	let selectQuery = database.select()
 		.from(struct.table.name)
-		.where(composeFilter({ where, struct }))
+		.where(builder => composeFilter({ database, builder, where, struct }))
 
 
 	if(distinct){
-		selectQuery = selectQuery
-			.fields(distinct)
-			.distinct()
+		selectQuery = selectQuery.distinct(distinct)
 	}
 
 	if(orderBy){
 		let invert = take < 0
 
 		for(let [key, dir] of Object.entries(orderBy)){
-			let asc = dir === 'asc'
-			let finalAsc = invert ? !asc : asc
-			
-			selectQuery = selectQuery.order(key, finalAsc)
+			if(invert)
+				dir = dir === 'asc' ? 'desc' : 'asc'
+		
+			selectQuery = selectQuery.orderBy(key, dir)
 		}
 	}
 
@@ -164,10 +172,9 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 		selectQuery = selectQuery.limit(Math.abs(take))
 	}
 
-
-	let items = database.all(selectQuery)
+	let items = (await selectQuery)
 		.map(row => struct.decode(row))
-	
+		
 
 	if(include){
 		for(let [key, selection] of Object.entries(include)){
@@ -200,19 +207,18 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	return items
 }
 
-function composeFilter({ where, struct }){
-	let expr = qb.expr()
-	let { AND, OR } = where
+function composeFilter({ database, builder, where, struct }){
+	let { AND, OR, NOT } = where
 	
 	if(AND){
 		for(let condition of AND){
-			expr = expr.and(composeFilter({ where: condition, struct }))
+			composeFilter({ database, builder, where: condition, struct })
 		}
 	}
 
 	if(OR){
 		for(let condition of OR){
-			expr = expr.or(composeFilter({ where: condition, struct }))
+			builder.orWhere(builder => composeFilter({ database, builder, where: condition, struct }))
 		}
 	}
 
@@ -225,18 +231,13 @@ function composeFilter({ where, struct }){
 		let operator = '='
 
 		if(childConf && typeof value === 'object'){
-			let subFilter = composeFilter({
-				where: value,
-				struct: childConf
-			})
-
 			subqueries.push({
 				key,
 				operator,
-				query: qb.select()
-					.field(childConf.table.idKey)
+				query: database
+					.select([childConf.table.idKey])
 					.from(childConf.table.name)
-					.where(subFilter)
+					.where(builder => composeFilter({ database, builder, where: value, struct: childConf}))
 					.limit(1)
 			})
 		}else if(fieldConf){
@@ -266,13 +267,10 @@ function composeFilter({ where, struct }){
 	)
 
 	for(let { key, operator } of fields){
-		expr = expr.and(`"${key}" ${operator} ?`, encoded[key])
+		builder.where(key, operator, encoded[key])
 	}
 
 	for(let { key, operator, query } of subqueries){
-		expr = expr.and(`"${key}" ${operator} ?`, query)
+		builder.where(key, operator, query)
 	}
-	
-
-	return expr
 }

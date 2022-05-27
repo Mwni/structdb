@@ -4,24 +4,25 @@ import InternalSQLError from './errors/internal-sql.js'
 
 
 
-export function open({ file, journalMode }){
+export async function open({ file, journalMode }){
 	let connection
 	let blank = !fs.existsSync(file)
-	let inTx
+	let inTx = false
 
 	try{
 		connection = createQueryLayer({
 			client: 'better-sqlite3',
 			connection: {
 				filename: file
-			}
+			},
+			useNullAsDefault: true
 		})
 
 		if(journalMode){
-			connection.pragma(`journal_mode = ${journalMode}`)
+			await connection.raw(`PRAGMA journal_mode = ${journalMode}`)
 		}
 	}catch(error){
-		connection.close()
+		await connection.close()
 		throw error
 	}
 
@@ -43,44 +44,32 @@ export function open({ file, journalMode }){
 				return blank
 			},
 	
-			close(){
-				connection.destroy()
+			async close(){
+				await connection.destroy()
 			},
 	
-			compact(){
-				connection.pragma('wal_checkpoint(TRUNCATE)')
+			async compact(){
+				await connection.raw('PRAGMA wal_checkpoint(TRUNCATE)')
 			},
-	
-			tx(executor){
+
+			async tx(executor){
 				if(inTx)
 					return executor()
 		
-				connection.exec('BEGIN IMMEDIATE')
+				connection.raw('BEGIN IMMEDIATE')
 				inTx = true
 				
 				try{
-					var ret = executor()
-		
-					if(ret instanceof Promise){
-						ret
-							.then(ret => {
-								connection.exec('COMMIT')
-							})
-							.catch(error => {
-								throw error
-							})
-					}else{
-						connection.exec('COMMIT')
-					}
+					var result = await executor()
+					connection.raw('COMMIT')
 				}catch(error){
-					connection.exec('ROLLBACK')
-		
+					connection.raw('ROLLBACK')
 					throw error
 				}finally{
 					inTx = false
 				}
 		
-				return ret
+				return result
 			},
 		}
 	)

@@ -7,7 +7,7 @@ import databaseCodecs from './codecs/index.js'
 
 export async function open({ file, schema, codecs = [], ...options }){
 	let { struct, tables } = generateStruct({ schema, codecs: [...databaseCodecs, ...codecs] })
-	let database = openDatabase({ file, ...options })
+	let database = await openDatabase({ file, ...options })
 	let models = {}
 
 	if(database.blank){
@@ -32,7 +32,7 @@ export async function open({ file, schema, codecs = [], ...options }){
 		},
 	
 		async tx(executor){
-			return await database.tx(async () => await executor(this))
+			return await database.tx(executor)
 		},
 	}
 }
