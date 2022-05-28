@@ -9,7 +9,7 @@ export function create({ database, struct }){
 			})
 		},
 
-		async readOne(args){
+		async readOne(args = {}){
 			return (
 				await readDeep({
 					...args,
@@ -20,7 +20,7 @@ export function create({ database, struct }){
 			)[0]
 		},
 
-		async readMany(args){
+		async readMany(args = {}){
 			return await readDeep({
 				...args,
 				database,
@@ -28,7 +28,15 @@ export function create({ database, struct }){
 			})
 		},
 
-		async iter(args){
+		async count(args = {}){
+			return await count({
+				...args,
+				database,
+				struct
+			})
+		},
+
+		async iter(args = {}){
 			return {
 				[Symbol.asyncIterator]() {
 					let offset = 0
@@ -142,7 +150,6 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	}
 
 
-	
 	let selectQuery = database.select()
 		.from(struct.table.name)
 		.where(builder => composeFilter({ database, builder, where, struct }))
@@ -216,12 +223,21 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	return items
 }
 
+
+async function count({ database, struct, where = {} }){
+	let result = await database.count(struct.table.idKey)
+		.from(struct.table.name)
+		.where(builder => composeFilter({ database, builder, where, struct }))
+
+	return Object.values(result[0])[0]
+}
+
 function composeFilter({ database, builder, where, struct }){
 	let { AND, OR, NOT } = where
 	
 	if(AND){
 		for(let condition of AND){
-			composeFilter({ database, builder, where: condition, struct })
+			builder.andWhere(builder => composeFilter({ database, builder, where: condition, struct }))
 		}
 	}
 
@@ -239,7 +255,12 @@ function composeFilter({ database, builder, where, struct }){
 		let childConf = struct.nodes[key]
 		let operator = '='
 
-		if(childConf && typeof value === 'object'){
+		if(value === null || value === undefined){
+			fields.push({ 
+				key, 
+				isNull: true
+			})
+		}else if(childConf && typeof value === 'object' && value){
 			subqueries.push({
 				key,
 				operator,
@@ -260,6 +281,11 @@ function composeFilter({ database, builder, where, struct }){
 				operator = 'LIKE'
 			}
 
+			if(value.lessThanOrEqual){
+				value = value.lessThanOrEqual
+				operator = '<='
+			}
+
 			fields.push({ 
 				key, 
 				operator, 
@@ -275,8 +301,11 @@ function composeFilter({ database, builder, where, struct }){
 		)
 	)
 
-	for(let { key, operator } of fields){
-		builder.where(key, operator, encoded[key])
+	for(let { key, operator, isNull } of fields){
+		if(isNull)
+			builder.whereNull(key)
+		else
+			builder.where(key, operator, encoded[key])
 	}
 
 	for(let { key, operator, query } of subqueries){
