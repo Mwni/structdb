@@ -22,7 +22,7 @@ export async function open({ file, journalMode }){
 			await connection.raw(`PRAGMA journal_mode = ${journalMode}`)
 		}
 	}catch(error){
-		await connection.close()
+		await connection.destroy()
 		throw error
 	}
 
