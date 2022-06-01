@@ -45,7 +45,13 @@ export async function open({ file, journalMode }){
 			},
 	
 			async close(){
+				await this.compact()
 				await connection.destroy()
+
+				if(fs.existsSync(`${file}-wal`)){
+					fs.unlinkSync(`${file}-wal`)
+					fs.unlinkSync(`${file}-shm`)
+				}
 			},
 	
 			async compact(){
