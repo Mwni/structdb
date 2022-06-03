@@ -79,20 +79,36 @@ export function create({ database, struct }){
 async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
 	let postInsertWhere = {}
+	let postInsertCreate = []
 
 	for(let [key, value] of Object.entries(inputData)){
 		let childConf = struct.nodes[key]
 		let fieldConf = struct.table.fields[key]
 
 		if(childConf && value){
-			let childInstance = await createDeep({
-				database,
-				struct: childConf,
-				include: {},
-				data: value,
-			})
+			if(childConf.many){
+				if(!Array.isArray(value)){
+					throw new TypeError(`field "${key}" has to be an array, as defined in the schema`)
+				}
 
-			tableData[key] = childInstance[childConf.table.idKey]
+				postInsertCreate.push({
+					struct: childConf,
+					data: value
+				})
+			}else{
+				if(typeof value !== 'object'){
+					throw new TypeError(`field "${key}" has to be a object, as defined in the schema`)
+				}
+
+				let childInstance = await createDeep({
+					database,
+					struct: childConf,
+					data: value,
+				})
+	
+				tableData[key] = childInstance[childConf.table.idKey]
+			}
+
 			include[key] = true
 		}else if(fieldConf){
 			tableData[key] = value
@@ -111,6 +127,32 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 		if(field.id || field.unique)
 			postInsertWhere[key] = tableData[key]
 	}
+
+	if(postInsertCreate.length > 0){
+		let row = (await readDeep({
+			database,
+			struct,
+			where: postInsertWhere,
+			take: -1
+		}))[0]
+
+		for(let { struct: childStruct, data } of postInsertCreate){
+			for(let item of data){
+				await createDeep({
+					database,
+					struct: childStruct,
+					data: {
+						...item,
+						[childStruct.referenceKey]: row
+					}
+				})
+			}
+		}
+	}
+
+	
+
+
 
 	return (await readDeep({
 		database,
