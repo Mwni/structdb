@@ -29,13 +29,13 @@ async function constructTable({ database, schema }){
 
 			if(id)
 				column.primary(key)
+	
 
-			if(required)
-				column.notNullable()
-					
-
-			if(defaultValue !== undefined)
+			if(defaultValue !== undefined){
 				column.defaultTo(defaultValue)
+				column.notNullable()
+			}else if(required)
+				column.notNullable()
 		}
 
 		for(let { name, unique, fields } of schema.indices){
