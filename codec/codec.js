@@ -1,9 +1,12 @@
+import commonCodecs from './common/index.js'
+
+
 export function create({ schema, codecs }){
 	let fieldEncoders = {}
 	let fieldDecoders = {}
 
 	for(let [key, prop] of Object.entries(schema.properties)){
-		let def = select({ schema: prop, codecs })
+		let def = select({ schema: prop, codecs: [...commonCodecs, ...codecs] })
 
 		if(!def)
 			continue
