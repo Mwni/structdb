@@ -81,7 +81,7 @@ export function generate({ schema, codecs }){
 		previousNodes.push({ node, schema })
 
 		for(let { key, schema, ...relation } of Object.values(relations)){
-			let newNode = node.nodes[key] = {
+			node.nodes[key] = {
 				key,
 				...relation,
 				...walk(schema, previousNodes),
@@ -113,24 +113,18 @@ export function generate({ schema, codecs }){
 		}
 	
 		if(schema.unique){
-			let uniques = Array.isArray(schema.unique[0])
-				? schema.unique
-				: [schema.unique]
-	
-			for(let fields of uniques){
-				let name = `${table.name}Unique`
-	
-				for(let field of fields){
-					table.fields[field].unique = table.fields[field].unique || true
-					name += field.slice(0, 1).toUpperCase() + field.slice(1)
-				}
-	
-				table.indices.push({
-					name,
-					unique: true,
-					fields,
-				})
-			}
+			table.indices.push(
+				...deriveIndex(schema, 'unique')
+					.map(index => ({ ...index, name: `${table.name}:${index.name}`}))
+					.map(index => ({ ...index, unique: true }))
+			)
+		}
+
+		if(schema.index){
+			table.indices.push(
+				...deriveIndex(schema, 'index')
+					.map(index => ({ ...index, name: `${table.name}:${index.name}`}))
+			)
 		}
 	
 		for(let [key, field] of Object.entries(table.fields)){
@@ -179,6 +173,25 @@ export function unfold(schema, node, previousRefNodes = []){
 	}else{
 		return node
 	}
+}
+
+function deriveIndex(schema, key){
+	let indices = []
+	let groups = Array.isArray(schema[key][0])
+		? schema[key]
+		: [schema[key]]
+
+	for(let fields of groups){
+		let name = key
+
+		for(let field of fields){
+			name += `-${field}`
+		}
+
+		indices.push({ name, fields,})
+	}
+
+	return indices
 }
 
 function findReferenceKeys(from, to){

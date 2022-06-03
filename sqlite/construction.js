@@ -42,7 +42,7 @@ async function constructTable({ database, schema }){
 			if(unique){
 				table.unique(fields, {indexName: name})
 			}else{
-				table.index(fields, {indexName: name})
+				table.index(fields, name)
 			}
 		}
 	})
