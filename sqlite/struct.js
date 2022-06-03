@@ -64,8 +64,12 @@ export function generate({ schema, codecs }){
 					key
 				}
 
-				if(codec)
+				if(codec){
 					field.type = codec.returnsType
+
+					if(field.hasOwnProperty('default'))
+						field.default = codec.encode(field.default)
+				}
 
 				fields[key] = field
 			}
