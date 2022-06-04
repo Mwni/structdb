@@ -20,8 +20,27 @@ export function create({ database, struct }){
 			)[0]
 		},
 
+		async readLast(){
+			return (
+				await readDeep({
+					...args,
+					take: -1,
+					database,
+					struct
+				})
+			)[0]
+		},
+
 		async readMany(args = {}){
 			return await readDeep({
+				...args,
+				database,
+				struct
+			})
+		},
+
+		async delete(args = {}){
+			return await deleteDeep({
 				...args,
 				database,
 				struct
@@ -78,7 +97,7 @@ export function create({ database, struct }){
 
 async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
-	let postInsertWhere = {}
+	let where = {}
 	let postInsertCreate = []
 
 	for(let [key, value] of Object.entries(inputData)){
@@ -113,7 +132,23 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 		}else if(fieldConf){
 			tableData[key] = value
 		}
+
+		if(fieldConf?.id || fieldConf?.unique)
+			where[key] = tableData[key]
 	}
+
+	let [ existingItem ] = await readDeep({
+		database,
+		struct,
+		include: inputData,
+		where,
+		take: -1
+	})
+
+	if(existingItem && hasIdenticalData({ struct, item: existingItem, data: tableData  })){
+		return existingItem
+	}
+
 
 	await database
 		.insert(struct.encode(tableData))
@@ -121,21 +156,16 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 		.onConflict()
 		.merge()
 
-	for(let key of Object.keys(tableData)){
-		let field = struct.table.fields[key]
-		
-		if(field.id || field.unique)
-			postInsertWhere[key] = tableData[key]
-	}
 
+	let [ createdItem ] = await readDeep({
+		database,
+		struct,
+		include: inputData,
+		where,
+		take: -1
+	})
+	
 	if(postInsertCreate.length > 0){
-		let row = (await readDeep({
-			database,
-			struct,
-			where: postInsertWhere,
-			take: -1
-		}))[0]
-
 		for(let { struct: childStruct, data } of postInsertCreate){
 			for(let item of data){
 				await createDeep({
@@ -143,24 +173,14 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 					struct: childStruct,
 					data: {
 						...item,
-						[childStruct.referenceKey]: row
+						[childStruct.referenceKey]: createdItem
 					}
 				})
 			}
 		}
 	}
 
-	
-
-
-
-	return (await readDeep({
-		database,
-		struct,
-		include: inputData,
-		where: postInsertWhere,
-		take: -1
-	}))[0]
+	return createdItem
 }
 
 async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, skip, take }){
@@ -265,6 +285,26 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	return items
 }
 
+async function deleteDeep({ database, struct, where = {} }){
+	let items = await readDeep({
+		database,
+		struct,
+		where
+	})
+
+	for(let [key, node] of Object.entries(struct.nodes)){
+		console.log(node)
+		if(node.many){
+
+		}
+	}
+
+	throw 'x'
+
+	await database(struct.table.name)
+		.where(builder => composeFilter({ database, builder, where, struct }))
+		.delete()
+}
 
 async function count({ database, struct, where = {} }){
 	let result = await database.count(struct.table.idKey)
@@ -281,12 +321,18 @@ function composeFilter({ database, builder, where, struct }){
 		for(let condition of AND){
 			builder.andWhere(builder => composeFilter({ database, builder, where: condition, struct }))
 		}
+		return
 	}
 
 	if(OR){
 		for(let condition of OR){
 			builder.orWhere(builder => composeFilter({ database, builder, where: condition, struct }))
 		}
+		return
+	}
+
+	if(NOT){
+		builder.whereNot(builder => composeFilter({ database, builder, where: NOT, struct }))
 	}
 
 	let fields = []
@@ -353,4 +399,20 @@ function composeFilter({ database, builder, where, struct }){
 	for(let { key, operator, query } of subqueries){
 		builder.where(key, operator, query)
 	}
+}
+
+function hasIdenticalData({ struct, item, data }){
+	for(let [key, value] of Object.entries(data)){
+		let childConf = struct.nodes[key]
+
+		if(childConf){
+			if(item[key][childConf.table.idKey] !== value)
+				return false
+		}else{
+			if(item[key] !== value)
+				return false
+		}
+	}
+
+	return true
 }
