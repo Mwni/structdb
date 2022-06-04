@@ -21,7 +21,6 @@ export function generate({ schema, codecs }){
 					relations[key] = {
 						key,
 						schema: prop.items,
-						referenceKey: referenceKeys[0],
 						many: true
 					}
 				}else if(referenceKeys.length === 1){
@@ -100,7 +99,8 @@ export function generate({ schema, codecs }){
 			tables.push(
 				table = {
 					fields,
-					indices: []
+					foreign: {},
+					indices: [],
 				}
 			)
 		}
@@ -140,7 +140,11 @@ export function generate({ schema, codecs }){
 	}
 
 	return {
-		struct: walk(unfold(schema, schema)),
+		struct: link(
+			walk(
+				unfold(schema, schema)
+			)
+		),
 		tables: tables.slice(1)
 	}
 }
@@ -173,6 +177,25 @@ export function unfold(schema, node, previousRefNodes = []){
 	}else{
 		return node
 	}
+}
+
+function link(struct, linked = []){
+	if(linked.includes(struct))
+		return struct
+
+	linked.push(struct)
+
+	for(let [key, node] of Object.entries(struct.nodes)){
+		if(node.referenceKey){
+			node.table.foreign[node.referenceKey] = struct.table
+		}else{
+			struct.table.foreign[key] = node.table
+		}
+
+		link(node, linked)
+	}
+
+	return struct
 }
 
 function deriveIndex(schema, key){

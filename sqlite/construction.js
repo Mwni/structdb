@@ -38,6 +38,14 @@ async function constructTable({ database, schema }){
 				column.notNullable()
 		}
 
+		for(let [key, { name, idKey }] of Object.entries(schema.foreign)){
+			table.foreign(key)
+				.references(idKey)
+				.inTable(name)
+				.onUpdate('CASCADE')
+				.onDelete('CASCADE')
+		}
+
 		for(let { name, unique, fields } of schema.indices){
 			if(unique){
 				table.unique(fields, {indexName: name})

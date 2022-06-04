@@ -39,6 +39,23 @@ export function create({ database, struct }){
 			})
 		},
 
+		async readGrouped({ by, ...args }){
+			return await readDeep({
+				...args,
+				groupBy: by,
+				database,
+				struct
+			})
+		},
+
+		async update(args){
+			return await updateDeep({
+				...args,
+				database,
+				struct
+			})
+		},
+
 		async delete(args = {}){
 			return await deleteDeep({
 				...args,
@@ -183,7 +200,7 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 	return createdItem
 }
 
-async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, skip, take }){
+async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, groupBy, skip, take }){
 	if(take === 0)
 		return []
 	
@@ -230,6 +247,10 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 		
 			selectQuery = selectQuery.orderBy(key, dir)
 		}
+	}
+
+	if(groupBy){
+		selectQuery = selectQuery.groupBy(groupBy)
 	}
 
 	if(skip){
@@ -285,6 +306,43 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	return items
 }
 
+async function updateDeep({ database, struct, data: inputData, where }){
+	let tableData = {}
+
+	for(let [key, value] of Object.entries(inputData)){
+		let childConf = struct.nodes[key]
+		let fieldConf = struct.table.fields[key]
+
+		if(childConf && value){
+			if(childConf.many){
+				if(!Array.isArray(value)){
+					throw new TypeError(`field "${key}" has to be an array, as defined in the schema`)
+				}
+
+				// todo
+			}else{
+				if(typeof value !== 'object'){
+					throw new TypeError(`field "${key}" has to be a object, as defined in the schema`)
+				}
+
+				await updateDeep({
+					database,
+					struct: childConf,
+					data: value,
+				})
+			}
+
+			include[key] = true
+		}else if(fieldConf){
+			tableData[key] = value
+		}
+	}
+
+	await database(struct.table.name)
+		.update(struct.encode(tableData))
+		.where(builder => composeFilter({ database, builder, where, struct }))
+}
+
 async function deleteDeep({ database, struct, where = {} }){
 	let items = await readDeep({
 		database,
@@ -292,18 +350,11 @@ async function deleteDeep({ database, struct, where = {} }){
 		where
 	})
 
-	for(let [key, node] of Object.entries(struct.nodes)){
-		console.log(node)
-		if(node.many){
-
-		}
-	}
-
-	throw 'x'
-
 	await database(struct.table.name)
 		.where(builder => composeFilter({ database, builder, where, struct }))
 		.delete()
+
+	return items
 }
 
 async function count({ database, struct, where = {} }){
