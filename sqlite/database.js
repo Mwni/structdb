@@ -13,7 +13,8 @@ export async function open({ file, journalMode }){
 		connection = createQueryLayer({
 			client: 'better-sqlite3',
 			connection: {
-				filename: file
+				filename: file,
+				defaultSafeIntegers: true
 			},
 			useNullAsDefault: true
 		})
