@@ -114,7 +114,6 @@ export function create({ database, struct }){
 
 async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
-	let where = {}
 	let postInsertCreate = []
 
 	for(let [key, value] of Object.entries(inputData)){
@@ -149,21 +148,24 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 		}else if(fieldConf){
 			tableData[key] = value
 		}
-
-		if(fieldConf?.id || fieldConf?.unique)
-			where[key] = tableData[key]
 	}
 
-	let [ existingItem ] = await readDeep({
-		database,
+	let where = unflatten({
 		struct,
-		include: inputData,
-		where,
-		take: -1
+		item: pullUniques({ struct, data: tableData })
 	})
 
-	if(existingItem && hasIdenticalData({ struct, item: existingItem, data: tableData  })){
-		return existingItem
+	if(Object.keys(where).length > 0){
+		let [ existingItem ] = await readDeep({
+			database,
+			struct,
+			include: inputData,
+			where,
+			take: -1
+		})
+
+		if(existingItem && hasIdenticalData({ struct, item: existingItem, data: tableData }))
+			return existingItem
 	}
 
 
@@ -215,7 +217,7 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 				...parentItems
 					.map(row => row[parentStruct.table.idKey])
 			)
-
+			
 			where[relationToParent.referenceKey] = { in: ids }
 		}else{
 			let ids = [].concat(
@@ -223,11 +225,9 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 					.map(row => row[struct.key])
 			)
 
-
 			where[struct.table.idKey] = { in: ids }
 		}
 	}
-
 
 	let selectQuery = database.select()
 		.from(struct.table.name)
@@ -262,7 +262,12 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	}
 	
 	let items = (await selectQuery)
+		.map(row => makeRowIntegerSafe(row))
 		.map(row => struct.decode(row))
+
+
+	if(items.length === 0)
+		return []
 	
 
 	if(include){
@@ -293,17 +298,7 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 		}
 	}
 
-	for(let item of items){
-		for(let [key, value] of Object.entries(item)){
-			let childConf = struct.nodes[key]
-
-			if(childConf && typeof value === 'number'){
-				item[key] = { [childConf.table.idKey]: value }
-			}
-		}
-	}
-
-	return items
+	return items.map(item => unflatten({ struct, item }))
 }
 
 async function updateDeep({ database, struct, data: inputData, where }){
@@ -399,22 +394,25 @@ function composeFilter({ database, builder, where, struct }){
 				key, 
 				isNull: true
 			})
-		}else if(childConf && typeof value === 'object' && value){
-			subqueries.push({
-				key,
-				operator,
-				query: database
-					.select([childConf.table.idKey])
-					.from(childConf.table.name)
-					.where(builder => composeFilter({ database, builder, where: value, struct: childConf}))
-					.limit(1)
-			})
-		}else if(fieldConf){
-			if(value.in){
-				value = value.in
-				operator = 'IN'
+		}else if(childConf && typeof value === 'object'){
+			if(value[childConf.table.idKey]){
+				fields.push({ 
+					key, 
+					operator, 
+					value: value[childConf.table.idKey]
+				})
+			}else{
+				subqueries.push({
+					key,
+					operator,
+					query: database
+						.select([childConf.table.idKey])
+						.from(childConf.table.name)
+						.where(builder => composeFilter({ database, builder, where: value, struct: childConf}))
+						.limit(1)
+				})
 			}
-	
+		}else if(fieldConf){
 			if(value.like){
 				value = value.like
 				operator = 'LIKE'
@@ -423,6 +421,15 @@ function composeFilter({ database, builder, where, struct }){
 			if(value.lessThanOrEqual){
 				value = value.lessThanOrEqual
 				operator = '<='
+			}
+
+			if(value.in){
+				if(value.in.length === 1){
+					value = value.in[0]
+				}else{
+					value = value.in
+					operator = 'IN'
+				}
 			}
 
 			fields.push({ 
@@ -452,18 +459,66 @@ function composeFilter({ database, builder, where, struct }){
 	}
 }
 
+function unflatten({ struct, item }){
+	for(let [key, value] of Object.entries(item)){
+		let childConf = struct.nodes[key]
+
+		if(childConf && typeof value === 'number'){
+			item[key] = { [childConf.table.idKey]: value }
+		}
+	}
+
+	return item
+}
+
+function pullUniques({ struct, data }){
+	let uniques = {}
+
+	for(let [key, value] of Object.entries(data)){
+		if(struct.table.fields[key].id)
+			uniques[key] = value
+	}
+
+	for(let index of struct.table.indices){
+		if(!index.unique)
+			continue
+
+		if(index.fields.every(field => data.hasOwnProperty(field))){
+			for(let field of index.fields){
+				uniques[field] = data[field]
+			}
+		}
+	}
+
+	return uniques
+}
+
 function hasIdenticalData({ struct, item, data }){
 	for(let [key, value] of Object.entries(data)){
 		let childConf = struct.nodes[key]
 
-		if(childConf){
-			if(item[key][childConf.table.idKey] !== value)
+		if(item[key] == null){
+			if(value != null)
 				return false
 		}else{
-			if(item[key] !== value)
-				return false
+			if(childConf){
+				if(item[key][childConf.table.idKey] !== value)
+					return false
+			}else{
+				if(item[key] !== value)
+					return false
+			}
 		}
 	}
 
 	return true
+}
+
+function makeRowIntegerSafe(row){
+	for(let [key, value] of Object.entries(row)){
+		if(typeof value === 'bigint' && value < 9007199254740991n)
+			row[key] = Number(value)
+	}
+
+	return row
 }
