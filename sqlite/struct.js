@@ -211,7 +211,7 @@ function deriveIndex(schema, key){
 			name += `-${field}`
 		}
 
-		indices.push({ name, fields,})
+		indices.push({ name, fields })
 	}
 
 	return indices
