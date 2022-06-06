@@ -74,6 +74,11 @@ export function create({ database, struct }){
 
 		async iter(args = {}){
 			return {
+				length: await count({
+					...args,
+					database,
+					struct
+				}),
 				[Symbol.asyncIterator]() {
 					let offset = 0
 					let limit = Math.abs(args.take || Infinity)
@@ -352,15 +357,29 @@ async function deleteDeep({ database, struct, where = {} }){
 	return items
 }
 
-async function count({ database, struct, where = {} }){
-	let result = await database.count(struct.table.idKey)
-		.from(struct.table.name)
-		.where(builder => composeFilter({ database, builder, where, struct }))
+async function count({ database, struct, where, distinct }){
+	let query
 
-	return Object.values(result[0])[0]
+	if(distinct){
+		query = database.count('*')
+			.from(
+				database(struct.table.name)
+					.distinct(...distinct)
+					.where(builder => composeFilter({ database, builder, where, struct }))
+			)
+	}else{
+		query = database(struct.table.name)
+			.count('*')
+			.where(builder => composeFilter({ database, builder, where, struct }))
+	}
+
+	return Number(Object.values((await query)[0])[0])
 }
 
 function composeFilter({ database, builder, where, struct }){
+	if(!where)
+		return
+
 	let { AND, OR, NOT } = where
 	
 	if(AND){
