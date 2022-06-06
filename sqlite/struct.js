@@ -202,7 +202,7 @@ function deriveIndex(schema, key){
 	let indices = []
 	let groups = Array.isArray(schema[key][0])
 		? schema[key]
-		: [schema[key]]
+		: schema[key].map(field => [field])
 
 	for(let fields of groups){
 		let name = key
