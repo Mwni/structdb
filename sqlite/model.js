@@ -437,8 +437,23 @@ function composeFilter({ database, builder, where, struct }){
 				operator = 'LIKE'
 			}
 
-			if(value.lessThanOrEqual){
-				value = value.lessThanOrEqual
+			if(value.greaterThan){
+				value = value.greaterThan
+				operator = '>'
+			}
+
+			if(value.greaterOrEqual){
+				value = value.greaterOrEqual
+				operator = '>='
+			}
+
+			if(value.lessThan){
+				value = value.lessThan
+				operator = '<'
+			}
+
+			if(value.lessOrEqual){
+				value = value.lessOrEqual
 				operator = '<='
 			}
 
