@@ -1,57 +1,58 @@
+import sql from './sql/index.js'
+
+
 const typeMap = {
-	"integer": "integer",
-	"string": "text",
-	"number": "double",
-	"bigint": "integer",
-	"boolean": "boolean",
-	"blob": "binary",
-	"any": "text"
+	"integer": "INTEGER",
+	"string": "TEXT",
+	"number": "REAL",
+	"bigint": "INTEGER",
+	"boolean": "INTEGER",
+	"blob": "BLOB",
+	"any": "TEXT"
 }
 
 
-export async function construct({ database, tables }){
+export function construct({ database, tables }){
 	for(let schema of tables){
 		constructTable({ database, schema })
 	}
 }
 
-async function constructTable({ database, schema }){
-	await database.schema.createTable(schema.name, table => {
-		for(let field of Object.values(schema.fields)){
-			let { key, type, required, id, default: defaultValue } = field
-			let column
+function constructTable({ database, schema }){
+	database.run(
+		sql.createTable({
+			name: schema.name,
+			foreigns: Object.entries(schema.foreign)
+				.map(([key, foreign]) => ({
+					key,
+					table: foreign.name,
+					references: foreign.idKey
+				})),
+			fields: Object.values(schema.fields)
+				.map(field => {
+					let { key, type, required, id, default: defaultValue } = field
+					let foreign = schema.foreign[key]
 
-			if(id && !defaultValue && !required){
-				column = table.increments(key)
-			}else{
-				column = table[typeMap[type]](key)
-			}
+					return {
+						name: key,
+						primary: !!id,
+						type: typeMap[type],
+						autoincrement: id && !defaultValue && !required,
+						default: defaultValue,
+						notNull: defaultValue !== undefined || required,
+					}
+				})
+		})
+	)
 
-			if(id)
-				column.primary(key)
-	
-
-			if(defaultValue !== undefined){
-				column.defaultTo(defaultValue)
-				column.notNullable()
-			}else if(required)
-				column.notNullable()
-		}
-
-		for(let [key, { name, idKey }] of Object.entries(schema.foreign)){
-			table.foreign(key)
-				.references(idKey)
-				.inTable(name)
-				.onUpdate('CASCADE')
-				.onDelete('CASCADE')
-		}
-
-		for(let { name, unique, fields } of schema.indices){
-			if(unique){
-				table.unique(fields, {indexName: name})
-			}else{
-				table.index(fields, name)
-			}
-		}
-	})
+	for(let { name, unique, fields } of schema.indices){
+		database.run(
+			sql.createIndex({
+				name,
+				table: schema.name,
+				unique,
+				fields
+			})
+		)
+	}
 }

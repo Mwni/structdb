@@ -1,29 +1,21 @@
 import fs from 'fs'
-import createQueryLayer from 'knex'
+import DatabaseAdapter from 'better-sqlite3'
 import InternalSQLError from './errors/internal-sql.js'
 
 
 
-export async function open({ file, journalMode }){
+export function open({ file, journalMode }){
 	let connection
 	let blank = !fs.existsSync(file)
-	let inTx = false
-
+	let inTx
 	try{
-		connection = createQueryLayer({
-			client: 'better-sqlite3',
-			connection: {
-				filename: file,
-				defaultSafeIntegers: true
-			},
-			useNullAsDefault: true
-		})
+		connection = new DatabaseAdapter(file)
 
 		if(journalMode){
-			await connection.raw(`PRAGMA journal_mode = ${journalMode}`)
+			connection.pragma(`journal_mode = ${journalMode}`)
 		}
 	}catch(error){
-		await connection.destroy()
+		connection.close()
 		throw error
 	}
 
@@ -38,46 +30,68 @@ export async function open({ file, journalMode }){
 		}
 	}
 
-	return Object.assign(
-		connection,
-		{
-			get blank(){
-				return blank
-			},
-	
-			async close(){
-				await this.compact()
-				await connection.destroy()
+	return {
+		get blank(){
+			return blank
+		},
 
-				if(fs.existsSync(`${file}-wal`)){
-					fs.unlinkSync(`${file}-wal`)
-					fs.unlinkSync(`${file}-shm`)
-				}
-			},
-	
-			async compact(){
-				await connection.raw('PRAGMA wal_checkpoint(TRUNCATE)')
-			},
+		close(){
+			connection.close()
+		},
 
-			async tx(executor){
-				if(inTx)
-					return executor()
-		
-				connection.raw('BEGIN IMMEDIATE')
-				inTx = true
-				
-				try{
-					var result = await executor()
-					connection.raw('COMMIT')
-				}catch(error){
-					connection.raw('ROLLBACK')
-					throw error
-				}finally{
-					inTx = false
+		compact(){
+			connection.pragma('wal_checkpoint(TRUNCATE)')
+		},
+
+		tx(executor){
+			if(inTx)
+				return executor()
+	
+			connection.exec('BEGIN IMMEDIATE')
+			inTx = true
+			
+			try{
+				var ret = executor()
+	
+				if(ret instanceof Promise){
+					ret
+						.then(ret => {
+							connection.exec('COMMIT')
+						})
+						.catch(error => {
+							throw error
+						})
+				}else{
+					connection.exec('COMMIT')
 				}
-		
-				return result
-			},
-		}
-	)
+			}catch(error){
+				connection.exec('ROLLBACK')
+	
+				throw error
+			}finally{
+				inTx = false
+			}
+	
+			return ret
+		},
+	
+		run({ text, values }){
+			console.log(text, values)
+
+			return prepare(text)
+				.run(values)
+		},
+	
+		all({ text, values }){
+			console.log(text, values)
+
+			return prepare(text)
+				.all(values)
+		},
+
+		iter({ text, values }){
+			return prepare(text)
+				.iterate(values)
+		},
+	}
 }

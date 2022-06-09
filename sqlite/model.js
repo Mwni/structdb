@@ -1,17 +1,20 @@
+import sql from './sql/index.js'
+
+
+
 export function create({ database, struct }){
-	
 	return {
-		async createOne(args){
-			return await createDeep({
+		createOne(args){
+			return createDeep({
 				...args,
 				database,
 				struct
 			})
 		},
 
-		async readOne(args = {}){
+		readOne(args = {}){
 			return (
-				await readDeep({
+				readDeep({
 					...args,
 					take: args.last ? -1 : 1,
 					database,
@@ -20,9 +23,9 @@ export function create({ database, struct }){
 			)[0]
 		},
 
-		async readLast(){
+		readLast(){
 			return (
-				await readDeep({
+				readDeep({
 					...args,
 					take: -1,
 					database,
@@ -31,16 +34,16 @@ export function create({ database, struct }){
 			)[0]
 		},
 
-		async readMany(args = {}){
-			return await readDeep({
+		readMany(args = {}){
+			return readDeep({
 				...args,
 				database,
 				struct
 			})
 		},
 
-		async readGrouped({ by, ...args }){
-			return await readDeep({
+		readGrouped({ by, ...args }){
+			return readDeep({
 				...args,
 				groupBy: by,
 				database,
@@ -48,33 +51,33 @@ export function create({ database, struct }){
 			})
 		},
 
-		async update(args){
-			return await updateDeep({
+		update(args){
+			return updateDeep({
 				...args,
 				database,
 				struct
 			})
 		},
 
-		async delete(args = {}){
-			return await deleteDeep({
+		delete(args = {}){
+			return deleteDeep({
 				...args,
 				database,
 				struct
 			})
 		},
 
-		async count(args = {}){
-			return await count({
+		count(args = {}){
+			return count({
 				...args,
 				database,
 				struct
 			})
 		},
 
-		async iter(args = {}){
+		iter(args = {}){
 			return {
-				length: await count({
+				length: count({
 					...args,
 					database,
 					struct
@@ -85,9 +88,9 @@ export function create({ database, struct }){
 					let queue = []
 					
 					return {
-						async next(){
+						next(){
 							if(queue.length === 0){
-								let slice = await readDeep({
+								let slice = readDeep({
 									...args,
 									skip: offset,
 									take: Math.min(limit, Math.sign(args.take || 1) * 1000),
@@ -117,7 +120,7 @@ export function create({ database, struct }){
 
 
 
-async function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
+function createDeep({ database, struct, data: inputData, include = {}, conflict = {} }){
 	let tableData = {}
 	let postInsertCreate = []
 
@@ -140,7 +143,7 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 					throw new TypeError(`field "${key}" has to be a object, as defined in the schema`)
 				}
 
-				let childInstance = await createDeep({
+				let childInstance = createDeep({
 					database,
 					struct: childConf,
 					data: value,
@@ -161,7 +164,7 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 	})
 
 	if(Object.keys(where).length > 0){
-		let [ existingItem ] = await readDeep({
+		let [ existingItem ] = readDeep({
 			database,
 			struct,
 			include: inputData,
@@ -173,15 +176,14 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 			return existingItem
 	}
 
+	database.run(
+		sql.upsert({
+			table: struct.table.name,
+			data: struct.encode(tableData)
+		})
+	)
 
-	await database
-		.insert(struct.encode(tableData))
-		.into(struct.table.name)
-		.onConflict()
-		.merge()
-
-
-	let [ createdItem ] = await readDeep({
+	let [ createdItem ] = readDeep({
 		database,
 		struct,
 		include: inputData,
@@ -192,7 +194,7 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 	if(postInsertCreate.length > 0){
 		for(let { struct: childStruct, data } of postInsertCreate){
 			for(let item of data){
-				await createDeep({
+				createDeep({
 					database,
 					struct: childStruct,
 					data: {
@@ -207,7 +209,7 @@ async function createDeep({ database, struct, data: inputData, include = {}, con
 	return createdItem
 }
 
-async function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, groupBy, skip, take }){
+function readDeep({ database, struct, forParent, where = {}, select, include, distinct, orderBy, groupBy, skip, take }){
 	if(take === 0)
 		return []
 	
@@ -234,46 +236,42 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 		}
 	}
 
-	let selectQuery = database.select()
-		.from(struct.table.name)
-		.where(builder => composeFilter({ database, builder, where, struct }))
+	let fields = []
 
-
-	if(distinct){
-		selectQuery = selectQuery.distinct(distinct)
+	for(let [name, field] of Object.entries(struct.table.fields)){
+		fields.push({ name, alias: name })
 	}
+
+	
 
 	if(orderBy){
 		let invert = take < 0
 
 		for(let [key, dir] of Object.entries(orderBy)){
 			if(invert)
-				dir = dir === 'asc' ? 'desc' : 'asc'
-		
-			selectQuery = selectQuery.orderBy(key, dir)
+				orderBy[key] = dir === 'asc' ? 'desc' : 'asc'
 		}
 	}
 
-	if(groupBy){
-		selectQuery = selectQuery.groupBy(groupBy)
-	}
 
-	if(skip){
-		selectQuery = selectQuery.offset(skip)
-	}
-	
-	if(take){
-		selectQuery = selectQuery.limit(Math.abs(take))
-	}
-	
-	let items = (await selectQuery)
+	let query = sql.select({
+		table: struct.table.name,
+		fields,
+		where: composeFilter({ where, struct }),
+		distinct,
+		groupBy,
+		orderBy,
+		limit: Math.abs(take),
+		offset: skip
+	})
+
+	let items = database.all(query)
 		.map(row => makeRowIntegerSafe(row))
 		.map(row => struct.decode(row))
 
 
 	if(items.length === 0)
 		return []
-	
 
 	if(include){
 		for(let [key, selection] of Object.entries(include)){
@@ -282,7 +280,7 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 			if(!childConf)
 				continue
 
-			let children = await readDeep({
+			let children = readDeep({
 				database,
 				struct: childConf,
 				include: selection,
@@ -306,7 +304,7 @@ async function readDeep({ database, struct, forParent, where = {}, select, inclu
 	return items.map(item => unflatten({ struct, item }))
 }
 
-async function updateDeep({ database, struct, data: inputData, where }){
+function updateDeep({ database, struct, data: inputData, where }){
 	let tableData = {}
 
 	for(let [key, value] of Object.entries(inputData)){
@@ -325,7 +323,7 @@ async function updateDeep({ database, struct, data: inputData, where }){
 					throw new TypeError(`field "${key}" has to be a object, as defined in the schema`)
 				}
 
-				await updateDeep({
+				updateDeep({
 					database,
 					struct: childConf,
 					data: value,
@@ -338,26 +336,26 @@ async function updateDeep({ database, struct, data: inputData, where }){
 		}
 	}
 
-	await database(struct.table.name)
+	database(struct.table.name)
 		.update(struct.encode(tableData))
 		.where(builder => composeFilter({ database, builder, where, struct }))
 }
 
-async function deleteDeep({ database, struct, where = {} }){
-	let items = await readDeep({
+function deleteDeep({ database, struct, where = {} }){
+	let items = readDeep({
 		database,
 		struct,
 		where
 	})
 
-	await database(struct.table.name)
+	database(struct.table.name)
 		.where(builder => composeFilter({ database, builder, where, struct }))
 		.delete()
 
 	return items
 }
 
-async function count({ database, struct, where, distinct }){
+function count({ database, struct, where, distinct }){
 	let query
 
 	if(distinct){
@@ -373,31 +371,42 @@ async function count({ database, struct, where, distinct }){
 			.where(builder => composeFilter({ database, builder, where, struct }))
 	}
 
-	return Number(Object.values((await query)[0])[0])
+	return Number(Object.values((query)[0])[0])
 }
 
-function composeFilter({ database, builder, where, struct }){
+function composeFilter({ where, struct }){
 	if(!where)
 		return
 
 	let { AND, OR, NOT } = where
+	let conditions = []
 	
 	if(AND){
 		for(let condition of AND){
-			builder.andWhere(builder => composeFilter({ database, builder, where: condition, struct }))
+			return [{
+				text: `(%)`,
+				join: `AND`,
+				items: composeFilter({ where: condition, struct })
+			}]
 		}
-		return
 	}
 
 	if(OR){
 		for(let condition of OR){
-			builder.orWhere(builder => composeFilter({ database, builder, where: condition, struct }))
+			return [{
+				text: `(%)`,
+				join: `OR`,
+				items: composeFilter({ where: condition, struct })
+			}]
 		}
-		return
 	}
 
 	if(NOT){
-		builder.whereNot(builder => composeFilter({ database, builder, where: NOT, struct }))
+		conditions.push({
+			text: `NOT (%)`,
+			join: `AND`,
+			items: composeFilter({ where: NOT, struct })
+		})
 	}
 
 	let fields = []
@@ -411,7 +420,8 @@ function composeFilter({ database, builder, where, struct }){
 		if(value === null || value === undefined){
 			fields.push({ 
 				key, 
-				isNull: true
+				operator: 'IS',
+				value: null
 			})
 		}else if(childConf && typeof value === 'object'){
 			if(value[childConf.table.idKey]){
@@ -424,11 +434,12 @@ function composeFilter({ database, builder, where, struct }){
 				subqueries.push({
 					key,
 					operator,
-					query: database
-						.select([childConf.table.idKey])
-						.from(childConf.table.name)
-						.where(builder => composeFilter({ database, builder, where: value, struct: childConf}))
-						.limit(1)
+					query: sql.select({
+						table: childConf.table.name,
+						fields: [childConf.table.idKey],
+						where: composeFilter({ where: value, struct: childConf}),
+						limit: 1
+					})
 				})
 			}
 		}else if(fieldConf){
@@ -481,16 +492,21 @@ function composeFilter({ database, builder, where, struct }){
 		)
 	)
 
-	for(let { key, operator, isNull } of fields){
-		if(isNull)
-			builder.whereNull(key)
-		else
-			builder.where(key, operator, encoded[key])
+	for(let { key, operator } of fields){
+		conditions.push({
+			text: `"${key}" ${operator} ?`,
+			values: [encoded[key]]
+		})
 	}
 
 	for(let { key, operator, query } of subqueries){
-		builder.where(key, operator, query)
+		conditions.push({
+			text: `"${key}" ${operator} (%)`,
+			items: [query]
+		})
 	}
+
+	return conditions
 }
 
 function unflatten({ struct, item }){

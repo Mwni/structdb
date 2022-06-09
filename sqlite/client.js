@@ -5,13 +5,13 @@ import { create as createModel } from './model.js'
 import databaseCodecs from './codecs/index.js'
 
 
-export async function open({ file, schema, codecs = [], ...options }){
+export function open({ file, schema, codecs = [], ...options }){
 	let { struct, tables } = generateStruct({ schema, codecs: [...databaseCodecs, ...codecs] })
-	let database = await openDatabase({ file, ...options })
+	let database = openDatabase({ file, ...options })
 	let models = {}
 
 	if(database.blank){
-		await constructTables({ database, tables })
+		constructTables({ database, tables })
 	}
 
 	for(let [key, node] of Object.entries(struct.nodes)){
@@ -23,11 +23,11 @@ export async function open({ file, schema, codecs = [], ...options }){
 		database,
 		...models, 
 
-		async close(){
+		close(){
 			database.close()
 		},
 	
-		async compact(){
+		compact(){
 			database.compact()
 		},
 	
