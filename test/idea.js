@@ -36,6 +36,38 @@ async function createIdea(){
 	//let allIdeas = await idea.user.ideas.readMany()
 
 	//console.log('all ideas:', allIdeas)
+
+
+	let vote = client.votes.createOne({
+		data: {
+			user: {
+				nick: 'Voter'
+			},
+			idea: {
+				text: 'another refactor',
+				user: {
+					nick: 'Mwni',
+					meta: {
+						lol: 2
+					}
+				}
+			},
+			type: 'up'
+		}
+	})
+
+	console.log(`created vote:`, vote)
+
+	vote = client.votes.update({
+		data: {
+			type: 'down'
+		},
+		where: {
+			id: vote.id
+		}
+	})
+
+	console.log(`updated vote:`, vote)
 }
 
 async function wipe(){

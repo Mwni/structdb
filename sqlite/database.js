@@ -76,14 +76,21 @@ export function open({ file, journalMode }){
 		},
 	
 		run({ text, values }){
-			console.log(text, values)
+			//console.log(text, values)
 
 			return prepare(text)
 				.run(values)
 		},
+
+		get({ text, values }){
+			//console.log(text, values)
+
+			return prepare(text)
+				.get(values)
+		},
 	
 		all({ text, values }){
-			console.log(text, values)
+			//console.log(text, values)
 
 			return prepare(text)
 				.all(values)

@@ -1,29 +1,27 @@
-export default function({ fields, distinct, table, where, leftJoins, limit, offset }){
+export default function({ fields, distinct, count, table, where, joins, orderBy, limit, offset }){
 	let selection
 	let limitation
-	let joins
 
-	if(distinct){
+	if(count){
+		selection = {
+			text: `COUNT(%)`,
+			join: `, `,
+			items: count
+				.map(formatField)
+		}
+	}else if(distinct){
 		selection = {
 			text: `DISTINCT %`,
 			join: `, `,
 			items: distinct
-				.map(
-					field => typeof field === 'string'
-						? `"${field}"`
-						: `"${field.name}" as "${field.alias}"`
-				)
+				.map(formatField)
 		}
 	}else if(fields){
 		selection = {
 			text: `%`,
 			join: `, `,
 			items: fields
-				.map(
-					field => typeof field === 'string'
-						? `"${field}"`
-						: `"${field.name}" as "${field.alias}"`
-				)
+				.map(formatField)
 		}
 	}else{
 		selection = {
@@ -31,11 +29,13 @@ export default function({ fields, distinct, table, where, leftJoins, limit, offs
 		}
 	}
 
-	if(leftJoins){
-		joins = leftJoins.map(join => ({
-			text: `LEFT JOIN "${join.table}" ON (%)`,
-			items: [join.condition]
-		}))
+	if(orderBy){
+		orderBy = {
+			text: `ORDER BY %`,
+			join: `, `,
+			items: Object.entries(orderBy)
+				.map(([key, dir]) => `"${key}" ${dir}`)
+		}
 	}
 
 	if(limit || offset){
@@ -48,6 +48,9 @@ export default function({ fields, distinct, table, where, leftJoins, limit, offs
 		}
 	}
 
+	joins = (joins || [])
+		.map(formatJoin)
+
 	return [
 		{
 			text: `SELECT`
@@ -56,58 +59,44 @@ export default function({ fields, distinct, table, where, leftJoins, limit, offs
 		{
 			text: `FROM "${table}"`
 		},
+		...joins,
 		{
 			text: `WHERE %`,
-			items: where && where.length > 0
-				? where
+			items: where.items.length > 0
+				? [where]
 				: ['1']
 		},
+		orderBy,
 		limitation
 	]
 }
 
-/*
-import compile from './lib/compile.js'
-import { compose as composeWhere } from './lib/where.js'
+function formatField(field){
+	if(field === '*')
+		return '*'
 
+	if(typeof field === 'string')
+		field = { name: field }
 
-export default compile({
-	setters: {
-		distinct: x => x,
-		fields: x => x,
-		from: x => x,
-		where: (where, previous = {}) => ({...previous, ...where}),
-		orderBy: (orderBy, previous = {}) => ({...previous, ...orderBy}),
-		limit: x => x,
-		offset: x => x,
-	},
-	render: p => {
-		let { sql: whereSql, data: whereData } = composeWhere(p.where)
+	return [
+		field.table
+			? `"${field.table}"."${field.name}"`
+			: `"${field.name}"`,
+		field.nameAlias
+			? `AS "${field.nameAlias}"`
+			: null
+	]
+}
 
-		return {
-			sql: [
-				`SELECT`,
-				p.distinct ? `DISTINCT` : null,
-				p.fields ? p.fields.map(field => `"${field}"`).join(', ') : '*',
-				`FROM "${p.from}"`,
-				whereSql ? [`WHERE`, whereSql] : null,
-				p.orderBy 
-					? [
-						`ORDER BY`,
-						{
-							list: Object.entries(p.orderBy)
-								.map(([key, dir]) => `"${key}" ${dir.toUpperCase()}`),
-							braces: false
-						}
-					]
-					: null,
-				p.limit ? `LIMIT @limit` : null
-			],
-			data: {
-				limit: p.limit,
-				...whereData
-			}
+function formatJoin(join){
+	return [
+		`LEFT JOIN "${join.table}"`,
+		join.tableAlias
+			? `AS "${join.tableAlias}"`
+			: null,
+		{
+			text: `ON (%)`,
+			items: join.condition
 		}
-	}
-})
-*/
+	]
+}

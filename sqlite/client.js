@@ -1,7 +1,7 @@
 import { generate as generateStruct } from './struct.js'
 import { open as openDatabase } from './database.js'
 import { construct as constructTables } from './construction.js'
-import { create as createModel } from './model.js'
+import { create as createModel } from './model/index.js'
 import databaseCodecs from './codecs/index.js'
 
 
