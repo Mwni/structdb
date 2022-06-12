@@ -1,4 +1,4 @@
-export default function({ table, where }){
+export default function({ table, where, limit }){
 	return [
 		{
 			text: `DELETE FROM "${table}"`
@@ -9,5 +9,8 @@ export default function({ table, where }){
 				? [where]
 				: ['1']
 		},
+		limit 
+			? {text: `LIMIT ?`, values: [limit]} 
+			: null
 	]
 }
