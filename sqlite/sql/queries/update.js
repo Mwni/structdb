@@ -1,4 +1,4 @@
-export default function({ table, data, where }){
+export default function({ table, data, where, limit }){
 	return [
 		{
 			text: `UPDATE "${table}"`
@@ -18,5 +18,8 @@ export default function({ table, data, where }){
 				? [where]
 				: ['1']
 		},
+		limit 
+			? {text: `LIMIT ?`, values: [limit]} 
+			: null
 	]
 }

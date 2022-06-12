@@ -3,7 +3,7 @@ import { read } from './read.js'
 import { composeFilter } from '../common.js'
 
 
-export function update({ database, struct, data: inputData, where }){
+export function update({ database, struct, data: inputData, where, limit }){
 	let tableData = {}
 
 	for(let [key, value] of Object.entries(inputData)){
@@ -42,7 +42,8 @@ export function update({ database, struct, data: inputData, where }){
 		sql.update({
 			table: struct.table.name,
 			data: struct.encode(tableData),
-			where: composeFilter({ where, struct })
+			where: composeFilter({ where, struct }),
+			limit
 		})
 	)
 
