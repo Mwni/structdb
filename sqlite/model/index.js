@@ -63,7 +63,16 @@ export function create({ database, struct }){
 			})
 		},
 
-		update(args){
+		updateOne(args){
+			return update({
+				...args,
+				database,
+				struct,
+				limit: 1
+			})[0]
+		},
+
+		updateMany(args){
 			return update({
 				...args,
 				database,
@@ -71,7 +80,16 @@ export function create({ database, struct }){
 			})
 		},
 
-		delete(args = {}){
+		deleteOne(args = {}){
+			return remove({
+				...args,
+				database,
+				struct,
+				limit: 1
+			})
+		},
+
+		deleteMany(args = {}){
 			return remove({
 				...args,
 				database,
