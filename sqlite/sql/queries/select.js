@@ -1,4 +1,4 @@
-export default function({ fields, distinct, count, table, where, joins, orderBy, limit, offset }){
+export default function({ fields, distinct, count, table, where, joins, orderBy, groupBy, limit, offset }){
 	let selection
 	let limitation
 
@@ -38,6 +38,15 @@ export default function({ fields, distinct, count, table, where, joins, orderBy,
 		}
 	}
 
+	if(groupBy){
+		groupBy = {
+			text: `GROUP BY %`,
+			join: `, `,
+			items: groupBy
+				.map(key => `"${key}"`)
+		}
+	}
+
 	if(limit || offset){
 		limitation = {
 			text: `LIMIT ?, ?`,
@@ -66,6 +75,7 @@ export default function({ fields, distinct, count, table, where, joins, orderBy,
 				? [where]
 				: ['1']
 		},
+		groupBy,
 		orderBy,
 		limitation
 	]
