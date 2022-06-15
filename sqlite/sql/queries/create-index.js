@@ -13,7 +13,7 @@ export default function({ name, table, unique, fields }){
 			text: `(%)`,
 			join: `, `,
 			items: fields
-				.map(field => `"${field}"`)
+				.map(field => `COALESCE("${field}", 0)`)
 		}
 	]
 }
