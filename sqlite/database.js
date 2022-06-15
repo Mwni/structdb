@@ -10,6 +10,7 @@ export function open({ file, journalMode }){
 	let inTx
 	try{
 		connection = new DatabaseAdapter(file)
+		connection.defaultSafeIntegers(true)
 
 		if(journalMode){
 			connection.pragma(`journal_mode = ${journalMode}`)
