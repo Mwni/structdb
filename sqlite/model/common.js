@@ -26,10 +26,10 @@ export function composeFilter({ where, struct }){
 	for(let [key, value] of Object.entries(where)){
 		index++
 
-		if(key === 'OR'){
+		if(key === 'AND' || key === 'OR'){
 			conditions.push({
 				text: `(%)`,
-				join: ` OR `,
+				join: ` ${key} `,
 				items: value.map(condition => composeFilter({ where: condition, struct })),
 				index
 			})
@@ -125,10 +125,20 @@ export function composeFilter({ where, struct }){
 	)
 
 	for(let { key, operator, index } of fields){
+		let value = encoded[key]
+
 		conditions.push({
-			text: `"${struct.table.name}"."${key}" ${operator} ?`,
-			values: [encoded[key]],
-			index
+			text: `"${struct.table.name}"."${key}" ${operator} %`,
+			index,
+			items: Array.isArray(value)
+				? [{
+					text: `(%)`,
+					join: `, `,
+					items: value.map(
+						(v, i) => ({ text: `?`, values: [v] })
+					)
+				}]
+				: [{ text: `?`, values: [value] }]
 		})
 	}
 
