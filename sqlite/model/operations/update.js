@@ -52,7 +52,7 @@ export function update({ database, struct, data: inputData, where, limit }){
 		struct,
 		where: {
 			...where,
-			...tableData
+			...inputData
 		},
 		include: inputData
 	})
