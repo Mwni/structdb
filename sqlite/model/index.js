@@ -68,7 +68,7 @@ export function create({ database, struct }){
 				...args,
 				database,
 				struct,
-				limit: 1
+				take: 1
 			})[0]
 		},
 
