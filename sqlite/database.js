@@ -77,22 +77,16 @@ export function open({ file, journalMode }){
 		},
 	
 		run({ text, values }){
-			//console.log(text, values)
-
 			return prepare(text)
 				.run(values)
 		},
 
 		get({ text, values }){
-			//console.log(text, values)
-
 			return prepare(text)
 				.get(values)
 		},
 	
 		all({ text, values }){
-			//console.log(text, values)
-
 			return prepare(text)
 				.all(values)
 		},
@@ -100,6 +94,39 @@ export function open({ file, journalMode }){
 		iter({ text, values }){
 			return prepare(text)
 				.iterate(values)
+		},
+	}
+}
+
+export function tracing(database){
+	return {
+		...database,
+
+		run({ text, values }){
+			console.log(text, values)
+			console.time(`> time`)
+			let res = database.run({ text, values })
+			console.timeEnd(`> time`)
+
+			return res
+		},
+
+		get({ text, values }){
+			console.log(text, values)
+			console.time(`> time`)
+			let res = database.get({ text, values })
+			console.timeEnd(`> time`)
+
+			return res
+		},
+	
+		all({ text, values }){
+			console.log(text, values)
+			console.time(`> time`)
+			let res = database.all({ text, values })
+			console.timeEnd(`> time`)
+
+			return res
 		},
 	}
 }
