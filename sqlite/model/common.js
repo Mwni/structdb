@@ -53,12 +53,23 @@ export function composeFilter({ where, struct }){
 				})
 			}else if(childConf && typeof value === 'object'){
 				if(value[childConf.table.idKey]){
-					fields.push({ 
-						key, 
-						operator, 
-						value: value[childConf.table.idKey],
-						index
-					})
+					if(value[childConf.table.idKey].in){
+						fields.push({ 
+							key, 
+							operator: 'IN', 
+							value: value[childConf.table.idKey].in,
+							index
+						})
+					}else{
+						fields.push({ 
+							key, 
+							operator, 
+							value: value[childConf.table.idKey],
+							index
+						})
+					}
+
+					
 				}else{
 					subqueries.push({
 						key,
@@ -110,7 +121,7 @@ export function composeFilter({ where, struct }){
 				fields.push({ 
 					key, 
 					operator, 
-					value ,
+					value,
 					index
 				})
 			}
