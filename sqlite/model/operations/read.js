@@ -2,7 +2,7 @@ import sql from '../../sql/index.js'
 import { composeFilter } from '../common.js'
 
 
-export function read({ database, struct, forParent, where = {}, include, distinct, orderBy, groupBy, skip, take, iter }){
+export function read({ database, struct, where = {}, include, distinct, orderBy, groupBy, skip, take, iter }){
 	if(take === 0)
 		return []
 
