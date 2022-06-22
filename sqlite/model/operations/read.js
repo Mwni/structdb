@@ -59,12 +59,13 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 	}
 }
 
-export function count({ database, struct, where, distinct }){
+export function count({ database, struct, where, distinct, limit }){
 	let query = sql.select({
 		count: ['*'],
 		table: struct.table.name,
 		where: composeFilter({ where, struct }),
-		distinct
+		distinct,
+		limit
 	})
 
 	return Object.values(database.get(query))[0]
@@ -133,7 +134,7 @@ function resolveNesting({ data, include, struct, chain = [] }){
 
 		let dotKey = [...chain, key].join('.')
 
-		if(data[dotKey] === null)
+		if(data[dotKey] == null)
 			continue
 
 		if(!include || !include[key]){
