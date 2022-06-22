@@ -68,8 +68,10 @@ export function open({ file, journalMode }){
 				}
 			}catch(error){
 				connection.exec('ROLLBACK')
-	
-				error.message = `${error.message} (while in tx -> rolled back)`
+
+				if(error.stack)
+					error.stack = `${error.stack}\n\n[[The error occured inside a transaction, which was rolled back]]\n`
+					
 				throw error
 			}finally{
 				inTx = false
