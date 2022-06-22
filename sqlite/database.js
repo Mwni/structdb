@@ -11,6 +11,7 @@ export function open({ file, journalMode }){
 	try{
 		connection = new DatabaseAdapter(file)
 		connection.defaultSafeIntegers(true)
+		connection.unsafeMode(true)
 
 		if(journalMode){
 			connection.pragma(`journal_mode = ${journalMode}`)
@@ -68,6 +69,7 @@ export function open({ file, journalMode }){
 			}catch(error){
 				connection.exec('ROLLBACK')
 	
+				error.message = `${error.message} (while in tx -> rolled back)`
 				throw error
 			}finally{
 				inTx = false
