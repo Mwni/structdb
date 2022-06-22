@@ -109,9 +109,8 @@ function pullUniques({ struct, data }){
 			continue
 
 		for(let key of index.fields){
-			let field = struct.table.fields[key]
-
-			uniques[key] = data[key] || field.default
+			if(data.hasOwnProperty(key))
+				uniques[key] = data[key]
 		}
 	}
 
