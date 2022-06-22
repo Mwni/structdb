@@ -26,7 +26,7 @@ export function create({ database, struct }){
 			)[0]
 		},
 
-		readLast(){
+		readLast(args = {}){
 			return (
 				read({
 					...args,
