@@ -36,8 +36,8 @@ export function open({ file, schema, codecs = [], ...options }){
 			database.compact()
 		},
 	
-		async tx(executor){
-			return await database.tx(executor)
+		tx(executor){
+			return database.tx(executor)
 		},
 	}
 }
