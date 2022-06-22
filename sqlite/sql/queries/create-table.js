@@ -1,3 +1,4 @@
+import { stringifyValue } from '../common.js'
 
 
 export default function({ name, fields, foreigns }){
@@ -15,7 +16,7 @@ export default function({ name, fields, foreigns }){
 					field.notNull ? `NOT NULL` : null,
 					field.primary ? `PRIMARY KEY` : null,
 					field.autoincrement ? `AUTOINCREMENT` : null,
-					field.default !== undefined ? `DEFAULT ${JSON.stringify(field.default)}` : null,
+					field.default !== undefined ? `DEFAULT ${stringifyValue(field.default)}` : null,
 				]),
 				...foreigns.map(foreign => [
 					`FOREIGN KEY("${foreign.key}")`,
