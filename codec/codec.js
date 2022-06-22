@@ -11,8 +11,8 @@ export function create({ schema, codecs }){
 		if(!def)
 			continue
 
-		fieldEncoders[key] = def.encode
-		fieldDecoders[key] = def.decode
+		fieldEncoders[key] = value => def.encode(value, prop)
+		fieldDecoders[key] = value => def.decode(value, prop)
 	}
 
 	return {
@@ -42,6 +42,9 @@ export function create({ schema, codecs }){
 
 export function select({ schema, codecs }){
 	return codecs.find(codec => {
+		if(codec.accepts && !codec.accepts(schema))
+			return false
+
 		if(codec.acceptsType && codec.acceptsType !== schema.type)
 			return false
 
