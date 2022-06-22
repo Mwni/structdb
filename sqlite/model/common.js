@@ -84,32 +84,32 @@ export function composeFilter({ where, struct }){
 					})
 				}
 			}else if(fieldConf){
-				if(value.like){
+				if(value.hasOwnProperty('like')){
 					value = value.like
 					operator = 'LIKE'
 				}
 
-				if(value.greaterThan){
+				if(value.hasOwnProperty('greaterThan')){
 					value = value.greaterThan
 					operator = '>'
 				}
 
-				if(value.greaterOrEqual){
+				if(value.hasOwnProperty('greaterOrEqual')){
 					value = value.greaterOrEqual
 					operator = '>='
 				}
 
-				if(value.lessThan){
+				if(value.hasOwnProperty('lessThan')){
 					value = value.lessThan
 					operator = '<'
 				}
 
-				if(value.lessOrEqual){
+				if(value.hasOwnProperty('lessOrEqual')){
 					value = value.lessOrEqual
 					operator = '<='
 				}
 
-				if(value.in){
+				if(value.hasOwnProperty('in')){
 					if(value.in.length === 1){
 						value = value.in[0]
 					}else{
