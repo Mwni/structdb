@@ -14,7 +14,7 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 		if(childConf && value){
 			if(childConf.many){
 				if(!Array.isArray(value)){
-					throw new TypeError(`field "${key}" has to be an array, as defined in the schema`)
+					throw new TypeError(`The field "${key}" has to be an array, as defined in the schema`)
 				}
 
 				postInsertCreate.push({
@@ -23,7 +23,7 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 				})
 			}else{
 				if(typeof value !== 'object'){
-					throw new TypeError(`field "${key}" has to be a object, as defined in the schema`)
+					throw new TypeError(`The field "${key}" has to be a object, as defined in the schema`)
 				}
 
 				let childInstance = createOne({
@@ -38,6 +38,8 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 			include[key] = true
 		}else if(fieldConf){
 			tableData[key] = value
+		}else{
+			throw new Error(`The field "${key}" is not defined in the schema`)
 		}
 	}
 

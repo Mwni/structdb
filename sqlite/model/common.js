@@ -124,6 +124,8 @@ export function composeFilter({ where, struct }){
 					value,
 					index
 				})
+			}else{
+				throw new Error(`The field "${key}" in the WHERE clause is not specified in the schema`)
 			}
 		}
 	}
