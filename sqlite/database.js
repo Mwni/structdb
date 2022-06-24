@@ -8,6 +8,9 @@ export function open({ file, journalMode }){
 	let connection
 	let blank = !fs.existsSync(file)
 	let inTx
+	let statementCache = {}
+
+
 	try{
 		connection = new DatabaseAdapter(file)
 		connection.defaultSafeIntegers(true)
@@ -22,8 +25,13 @@ export function open({ file, journalMode }){
 	}
 
 	function prepare(sql){
+		let cached = statementCache[sql]
+
+		if(cached)
+			return cached
+
 		try{
-			return connection.prepare(sql)
+			return statementCache[sql] = connection.prepare(sql)
 		}catch(error){
 			throw new InternalSQLError({
 				message: error.message,
