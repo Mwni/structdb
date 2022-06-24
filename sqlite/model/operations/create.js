@@ -5,6 +5,7 @@ import { unflatten } from '../common.js'
 
 export function createOne({ database, struct, data: inputData, include = {} }){
 	let tableData = {}
+	let nodes = []
 	let postInsertCreate = []
 
 	for(let [key, value] of Object.entries(inputData)){
@@ -26,13 +27,11 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 					throw new TypeError(`The field "${key}" has to be a object, as defined in the schema`)
 				}
 
-				let childInstance = createOne({
-					database,
+				nodes.push({
+					key,
 					struct: childConf,
-					data: value,
+					value
 				})
-	
-				tableData[key] = childInstance[childConf.table.idKey]
 			}
 
 			include[key] = true
@@ -47,8 +46,19 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 		struct,
 		item: pullUniques({ struct, data: tableData })
 	})
+	
 
-	if(Object.keys(where).length > 0){
+	let [ existingItem ] = read({
+		database,
+		struct,
+		where: inputData,
+		take: -1
+	})
+
+	if(existingItem)
+		return existingItem
+
+	/*if(Object.keys(where).length > 0){
 		let [ existingItem ] = read({
 			database,
 			struct,
@@ -59,6 +69,16 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 
 		if(existingItem && hasIdenticalData({ struct, item: existingItem, data: tableData }))
 			return existingItem
+	}*/
+
+	for(let node of nodes){
+		let childInstance = createOne({
+			database,
+			struct: node.struct,
+			data: node.value,
+		})
+
+		tableData[node.key] = childInstance[node.struct.table.idKey]
 	}
 
 	database.run(
