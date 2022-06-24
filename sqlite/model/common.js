@@ -68,9 +68,10 @@ export function composeFilter({ where, struct }){
 							index
 						})
 					}
-
-					
 				}else{
+					if(childConf.many)
+						continue
+
 					subqueries.push({
 						key,
 						operator,
