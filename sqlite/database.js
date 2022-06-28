@@ -12,7 +12,7 @@ export function open({ file, journalMode }){
 
 
 	try{
-		connection = new DatabaseAdapter(file)
+		connection = new DatabaseAdapter(file, { timeout: 60000 })
 		connection.defaultSafeIntegers(true)
 		connection.unsafeMode(true)
 
