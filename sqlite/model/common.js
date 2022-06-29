@@ -13,10 +13,11 @@ export function unflatten({ struct, item }){
 	return item
 }
 
-export function composeFilter({ where, struct }){
+export function composeFilter({ where, include = {}, struct, chain = [] }){
 	if(!where)
 		return
 
+	let table = ['T', ...chain].join('.')
 	let fields = []
 	let subqueries = []
 	let conditions = []
@@ -30,13 +31,27 @@ export function composeFilter({ where, struct }){
 			conditions.push({
 				text: `(%)`,
 				join: ` ${key} `,
-				items: value.map(condition => composeFilter({ where: condition, struct })),
+				items: value.map(
+					condition => composeFilter({ 
+						where: condition, 
+						include, 
+						struct,
+						chain
+					})
+				),
 				index
 			})
 		}else if(key === 'NOT'){
 			conditions.push({
 				text: `NOT (%)`,
-				items: [composeFilter({ where: value, struct })],
+				items: [
+					composeFilter({ 
+						where: value, 
+						include, 
+						struct,
+						chain
+					})
+				],
 				index
 			})
 		}else{
@@ -47,15 +62,18 @@ export function composeFilter({ where, struct }){
 			if(value === null || value === undefined){
 				fields.push({ 
 					key, 
+					table,
 					operator: 'IS',
 					value: null,
 					index
 				})
 			}else if(childConf && typeof value === 'object'){
 				if(value[childConf.table.idKey]){
+					//todo: make this less messy
 					if(value[childConf.table.idKey].in){
 						fields.push({ 
 							key, 
+							table,
 							operator: 'IN', 
 							value: value[childConf.table.idKey].in,
 							index
@@ -63,6 +81,7 @@ export function composeFilter({ where, struct }){
 					}else{
 						fields.push({ 
 							key, 
+							table,
 							operator, 
 							value: value[childConf.table.idKey],
 							index
@@ -72,17 +91,36 @@ export function composeFilter({ where, struct }){
 					if(childConf.many)
 						continue
 
-					subqueries.push({
-						key,
-						operator,
-						query: sql.select({
-							table: childConf.table.name,
-							fields: [childConf.table.idKey],
-							where: composeFilter({ where: value, struct: childConf}),
-							limit: 1
-						}),
-						index
-					})
+					if(include[key]){
+						conditions.push({
+							...composeFilter({
+								where: value, 
+								include: include[key], 
+								struct: childConf,
+								chain: [...chain, key]
+							}),
+							index
+						})
+					}else{
+						subqueries.push({
+							key,
+							table,
+							operator,
+							query: sql.select({
+								table: childConf.table.name,
+								tableAlias: `${table}.${key}`,
+								fields: [childConf.table.idKey],
+								where: composeFilter({ 
+									where: value, 
+									include: include[key], 
+									struct: childConf,
+									chain: [...chain, key]
+								}),
+								limit: 1
+							}),
+							index
+						})
+					}
 				}
 			}else if(fieldConf){
 				if(value.hasOwnProperty('like')){
@@ -120,8 +158,9 @@ export function composeFilter({ where, struct }){
 				}
 
 				fields.push({ 
-					key, 
-					operator, 
+					key,
+					table,
+					operator,
 					value,
 					index
 				})
@@ -138,11 +177,11 @@ export function composeFilter({ where, struct }){
 		)
 	)
 
-	for(let { key, operator, index } of fields){
+	for(let { key, table, operator, index } of fields){
 		let value = encoded[key]
 
 		conditions.push({
-			text: `"${struct.table.name}"."${key}" ${operator} %`,
+			text: `"${table}"."${key}" ${operator} %`,
 			index,
 			items: Array.isArray(value)
 				? [{
@@ -156,9 +195,9 @@ export function composeFilter({ where, struct }){
 		})
 	}
 
-	for(let { key, operator, query, index } of subqueries){
+	for(let { key, table, operator, query, index } of subqueries){
 		conditions.push({
-			text: `"${struct.table.name}"."${key}" ${operator} (%)`,
+			text: `"${table}"."${key}" ${operator} (%)`,
 			items: [query],
 			index
 		})

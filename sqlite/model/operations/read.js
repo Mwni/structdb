@@ -19,7 +19,8 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 	let query = sql.select({
 		...composeNesting({ struct, include }),
 		table: struct.table.name,
-		where: composeFilter({ where, struct }),
+		tableAlias: 'T',
+		where: composeFilter({ where, include, struct }),
 		distinct,
 		groupBy,
 		orderBy,
@@ -75,9 +76,7 @@ export function count({ database, struct, where, distinct, limit }){
 function composeNesting({ include, struct, chain = [] }){
 	let fields = []
 	let joins = []
-	let table = chain.length === 0
-		? struct.table.name
-		: ['T', ...chain].join('.')
+	let table = ['T', ...chain].join('.')
 
 	for(let [key, field] of Object.entries(struct.table.fields)){
 		fields.push({

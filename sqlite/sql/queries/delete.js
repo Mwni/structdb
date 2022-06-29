@@ -1,7 +1,9 @@
-export default function({ table, where, limit }){
+export default function({ table, tableAlias, where, limit }){
 	return [
 		{
-			text: `DELETE FROM "${table}"`
+			text: tableAlias
+				? `DELETE FROM "${table}" AS "${tableAlias}"`
+				: `DELETE FROM "${table}"`
 		},
 		{
 			text: `WHERE %`,

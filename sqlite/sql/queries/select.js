@@ -1,4 +1,4 @@
-export default function({ fields, distinct, count, table, where, joins, orderBy, groupBy, limit, offset }){
+export default function({ fields, distinct, count, table, tableAlias, where, joins, orderBy, groupBy, limit, offset }){
 	let selection
 	let limitation
 
@@ -66,7 +66,9 @@ export default function({ fields, distinct, count, table, where, joins, orderBy,
 		},
 		selection,
 		{
-			text: `FROM "${table}"`
+			text: tableAlias
+				? `FROM "${table}" AS "${tableAlias}"`
+				: `FROM "${table}"`
 		},
 		...joins,
 		{

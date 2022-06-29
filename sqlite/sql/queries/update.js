@@ -1,7 +1,9 @@
-export default function({ table, data, where, limit }){
+export default function({ table, tableAlias, data, where, limit }){
 	return [
 		{
-			text: `UPDATE "${table}"`
+			text: tableAlias
+				? `UPDATE "${table}" AS "${tableAlias}"`
+				: `UPDATE "${table}"`
 		},
 		{
 			text: `SET %`,

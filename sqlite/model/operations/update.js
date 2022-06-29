@@ -41,6 +41,7 @@ export function update({ database, struct, data: inputData, where, limit }){
 	database.run(
 		sql.update({
 			table: struct.table.name,
+			tableAlias: 'T',
 			data: struct.encode(tableData),
 			where: composeFilter({ where, struct }),
 			limit
