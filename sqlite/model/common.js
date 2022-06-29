@@ -187,7 +187,7 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 				? [{
 					text: `(%)`,
 					join: `, `,
-					items: value.map(
+					items: [...new Set(value)].map(
 						(v, i) => ({ text: `?`, values: [v] })
 					)
 				}]
