@@ -27,7 +27,9 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 	for(let [key, value] of Object.entries(where)){
 		index++
 
-		if(key === 'AND' || key === 'OR'){
+		if(key === 'RAW'){
+			conditions.push(value)
+		}else if(key === 'AND' || key === 'OR'){
 			conditions.push({
 				text: `(%)`,
 				join: ` ${key} `,
