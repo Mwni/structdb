@@ -7,7 +7,6 @@ import InternalSQLError from './errors/internal-sql.js'
 export function open({ file, journalMode }){
 	let connection
 	let blank = !fs.existsSync(file)
-	let inTx
 	let statementCache = {}
 
 
@@ -40,7 +39,7 @@ export function open({ file, journalMode }){
 		}
 	}
 
-	return {
+	return patchImmediateLockThrow({
 		get blank(){
 			return blank
 		},
@@ -54,11 +53,10 @@ export function open({ file, journalMode }){
 		},
 
 		tx(executor){
-			if(inTx)
+			if(connection.inTransaction)
 				return executor()
 	
 			connection.exec('BEGIN IMMEDIATE')
-			inTx = true
 			
 			try{
 				var ret = executor()
@@ -81,8 +79,6 @@ export function open({ file, journalMode }){
 					error.stack = `${error.stack}\n\n[[The error occured inside a transaction, which was rolled back]]\n`
 					
 				throw error
-			}finally{
-				inTx = false
 			}
 	
 			return ret
@@ -107,7 +103,7 @@ export function open({ file, journalMode }){
 			return prepare(text)
 				.iterate(values)
 		},
-	}
+	})
 }
 
 export function tracing(database){
@@ -140,5 +136,28 @@ export function tracing(database){
 
 			return res
 		},
+	}
+}
+
+function patchImmediateLockThrow(database){
+	return {
+		...database,
+		...['run', 'get', 'all', 'iter'].reduce(
+			(patched, method) => ({
+				...patched,
+				[method]: args => {
+					while(true){
+						try{
+							return database[method](args)
+						}catch(error){
+							if(error.code !== 'SQLITE_BUSY' && error.code !== 'SQLITE_BUSY_SNAPSHOT'){
+								throw error
+							}
+						}
+					}
+				}
+			}),
+			{}
+		)
 	}
 }
