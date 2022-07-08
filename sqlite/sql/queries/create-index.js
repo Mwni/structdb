@@ -7,6 +7,9 @@ export default function({ name, table, unique, fields }){
 			text: unique ? `UNIQUE INDEX` : `INDEX`
 		},
 		{
+			text: `IF NOT EXISTS`
+		},
+		{
 			text: `"${name}" ON ${table}`
 		},
 		{

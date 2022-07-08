@@ -4,7 +4,7 @@ import { stringifyValue } from '../common.js'
 export default function({ name, fields, foreigns }){
 	return [
 		{
-			text: `CREATE TABLE "${name}"`
+			text: `CREATE TABLE IF NOT EXISTS "${name}"`
 		},
 		{
 			text: `(%)`,
