@@ -23,11 +23,13 @@ export function open({ file, journalMode }){
 		throw error
 	}
 
-	function prepare(sql){
-		let cached = statementCache[sql]
+	function prepare(sql, useCache){
+		if(useCache){
+			let cached = statementCache[sql]
 
-		if(cached)
-			return cached
+			if(cached)
+				return cached
+		}
 
 		try{
 			return statementCache[sql] = connection.prepare(sql)
@@ -85,22 +87,22 @@ export function open({ file, journalMode }){
 		},
 	
 		run({ text, values }){
-			return prepare(text)
+			return prepare(text, true)
 				.run(values)
 		},
 
 		get({ text, values }){
-			return prepare(text)
+			return prepare(text, true)
 				.get(values)
 		},
 	
 		all({ text, values }){
-			return prepare(text)
+			return prepare(text, true)
 				.all(values)
 		},
 
 		iter({ text, values }){
-			return prepare(text)
+			return prepare(text, false)
 				.iterate(values)
 		},
 	})
