@@ -138,13 +138,22 @@ export function tracing(database){
 
 			return res
 		},
+
+		iter({ text, values }){
+			console.log(text, values)
+			console.time(`> time`)
+			let res = database.iter({ text, values })
+			console.timeEnd(`> time`)
+
+			return res
+		},
 	}
 }
 
 function patchImmediateLockThrow(database){
 	return {
 		...database,
-		...['run', 'get', 'all', 'iter'].reduce(
+		...['run', 'get', 'all', 'iter', 'tx'].reduce(
 			(patched, method) => ({
 				...patched,
 				[method]: args => {
