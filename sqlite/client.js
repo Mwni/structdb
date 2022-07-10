@@ -7,15 +7,22 @@ import databaseCodecs from './codecs/index.js'
 
 export function open({ file, schema, codecs = [], ...options }){
 	let { struct, tables } = generateStruct({ schema, codecs: [...databaseCodecs, ...codecs] })
-	let database = openDatabase({ file, ...options })
 	let models = {}
+	let database = {
+		write: openDatabase({ file, ...options }),
+		read: openDatabase({ file, ...options, readonly: true })
+	}
 
 	if(options.debug){
-		database = wrapTracing(database)
+		database.write = wrapTracing(database.write)
+		database.read = wrapTracing(database.read)
 	}
 
 	if(database.blank){
-		constructTables({ database, tables })
+		constructTables({ 
+			database: database.write,
+			tables 
+		})
 	}
 
 	for(let [key, node] of Object.entries(struct.nodes)){
@@ -29,15 +36,16 @@ export function open({ file, schema, codecs = [], ...options }){
 		...models, 
 
 		close(){
-			database.close()
+			database.write.close()
+			database.read.close()
 		},
 	
 		compact(){
-			database.compact()
+			database.write.compact()
 		},
 	
 		tx(executor){
-			return database.tx(executor)
+			return database.write.tx(executor)
 		},
 	}
 }

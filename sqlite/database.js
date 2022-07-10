@@ -4,14 +4,17 @@ import InternalSQLError from './errors/internal-sql.js'
 
 
 
-export function open({ file, journalMode }){
+export function open({ file, journalMode, readonly = false }){
 	let connection
 	let blank = !fs.existsSync(file)
 	let statementCache = {}
 
-
 	try{
-		connection = new DatabaseAdapter(file, { timeout: 60000 })
+		connection = new DatabaseAdapter(file, { 
+			timeout: 60000, 
+			readonly 
+		})
+
 		connection.defaultSafeIntegers(true)
 		connection.unsafeMode(true)
 
@@ -19,7 +22,9 @@ export function open({ file, journalMode }){
 			connection.pragma(`journal_mode = ${journalMode}`)
 		}
 	}catch(error){
-		connection.close()
+		if(connection)
+			connection.close()
+
 		throw error
 	}
 
@@ -44,6 +49,10 @@ export function open({ file, journalMode }){
 	return patchImmediateLockThrow({
 		get blank(){
 			return blank
+		},
+
+		clone(){
+			return open({ file, journalMode })
 		},
 
 		close(){
@@ -161,8 +170,12 @@ function patchImmediateLockThrow(database){
 						try{
 							return database[method](args)
 						}catch(error){
+							console.log('nah', error.code)
 							if(error.code !== 'SQLITE_BUSY' && error.code !== 'SQLITE_BUSY_SNAPSHOT'){
 								throw error
+							}else{
+								console.log('retry')
+								msleep(1000)
 							}
 						}
 					}
@@ -171,4 +184,16 @@ function patchImmediateLockThrow(database){
 			{}
 		)
 	}
+}
+
+
+export function msleep(n) {
+	Atomics.wait(
+		new Int32Array(
+			new SharedArrayBuffer(4)
+		), 
+		0, 
+		0, 
+		n
+	)
 }

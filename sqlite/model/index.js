@@ -10,7 +10,7 @@ export function create({ database, struct }){
 		createOne(args){
 			return createOne({
 				...args,
-				database,
+				database: database.write,
 				struct
 			})
 		},
@@ -20,7 +20,7 @@ export function create({ database, struct }){
 				read({
 					...args,
 					take: args.last ? -1 : 1,
-					database,
+					database: database.read,
 					struct
 				})
 			)[0]
@@ -31,7 +31,7 @@ export function create({ database, struct }){
 				read({
 					...args,
 					take: -1,
-					database,
+					database: database.read,
 					struct
 				})
 			)[0]
@@ -40,7 +40,7 @@ export function create({ database, struct }){
 		readMany(args = {}){
 			return read({
 				...args,
-				database,
+				database: database.read,
 				struct
 			})
 		},
@@ -49,7 +49,7 @@ export function create({ database, struct }){
 			return read({
 				...args,
 				groupBy: by,
-				database,
+				database: database.read,
 				struct
 			})
 		},
@@ -57,7 +57,7 @@ export function create({ database, struct }){
 		iter(args = {}){
 			return read({
 				...args,
-				database,
+				database: database.read,
 				struct,
 				iter: true
 			})
@@ -66,7 +66,7 @@ export function create({ database, struct }){
 		updateOne(args){
 			return update({
 				...args,
-				database,
+				database: database.write,
 				struct,
 				take: 1
 			})[0]
@@ -75,7 +75,7 @@ export function create({ database, struct }){
 		updateMany(args){
 			return update({
 				...args,
-				database,
+				database: database.write,
 				struct
 			})
 		},
@@ -83,7 +83,7 @@ export function create({ database, struct }){
 		deleteOne(args = {}){
 			return remove({
 				...args,
-				database,
+				database: database.write,
 				struct,
 				limit: 1
 			})
@@ -92,7 +92,7 @@ export function create({ database, struct }){
 		deleteMany(args = {}){
 			return remove({
 				...args,
-				database,
+				database: database.write,
 				struct
 			})
 		},
@@ -100,7 +100,7 @@ export function create({ database, struct }){
 		count(args = {}){
 			return count({
 				...args,
-				database,
+				database: database.read,
 				struct
 			})
 		},
