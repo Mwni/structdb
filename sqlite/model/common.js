@@ -90,10 +90,38 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 						})
 					}
 				}else{
-					if(childConf.many)
-						continue
+					if(childConf.many){
+						if(Array.isArray(value))
+							continue
 
-					if(include[key]){
+						conditions.push({
+							text: `EXISTS (%)`,
+							items: [
+								sql.select({
+									table: childConf.table.name,
+									tableAlias: `${table}.${key}`,
+									fields: [childConf.table.idKey],
+									where: {
+										text: `(%)`,
+										join: ` AND `,
+										items: [
+											{
+												text: `"${table}.${key}"."${childConf.referenceKey}" = "${table}"."${struct.table.idKey}"`
+											},
+											composeFilter({ 
+												where: value,
+												include: include[key], 
+												struct: childConf,
+												chain: [...chain, key]
+											})
+										]
+									},
+									limit: 1
+								})
+							],
+							index
+						})
+					}else if(include[key]){
 						conditions.push({
 							...composeFilter({
 								where: value, 
