@@ -10,7 +10,7 @@ export function create({ database, struct }){
 		createOne(args){
 			return createOne({
 				...args,
-				database: database.write,
+				database,
 				struct
 			})
 		},
@@ -20,7 +20,7 @@ export function create({ database, struct }){
 				read({
 					...args,
 					take: args.last ? -1 : 1,
-					database: database.read,
+					database,
 					struct
 				})
 			)[0]
@@ -31,7 +31,7 @@ export function create({ database, struct }){
 				read({
 					...args,
 					take: -1,
-					database: database.read,
+					database,
 					struct
 				})
 			)[0]
@@ -40,7 +40,7 @@ export function create({ database, struct }){
 		readMany(args = {}){
 			return read({
 				...args,
-				database: database.read,
+				database,
 				struct
 			})
 		},
@@ -49,24 +49,41 @@ export function create({ database, struct }){
 			return read({
 				...args,
 				groupBy: by,
-				database: database.read,
+				database,
 				struct
 			})
 		},
 
-		iter(args = {}){
-			return read({
-				...args,
-				database: database.read,
-				struct,
-				iter: true
-			})
+		iter({ dedicated = true, ...args } = {}){
+			if(dedicated){
+				let readAccess = database.clone({ 
+					readonly: true 
+				})
+
+				let iter = read({
+					...args,
+					database: readAccess,
+					struct,
+					iter: true
+				})
+
+				iter.done.then(readAccess.close)
+
+				return iter
+			}else{
+				return read({
+					...args,
+					database: database,
+					struct,
+					iter: true
+				})
+			}
 		},
 
 		updateOne(args){
 			return update({
 				...args,
-				database: database.write,
+				database,
 				struct,
 				take: 1
 			})[0]
@@ -75,7 +92,7 @@ export function create({ database, struct }){
 		updateMany(args){
 			return update({
 				...args,
-				database: database.write,
+				database,
 				struct
 			})
 		},
@@ -83,7 +100,7 @@ export function create({ database, struct }){
 		deleteOne(args = {}){
 			return remove({
 				...args,
-				database: database.write,
+				database,
 				struct,
 				limit: 1
 			})
@@ -92,7 +109,7 @@ export function create({ database, struct }){
 		deleteMany(args = {}){
 			return remove({
 				...args,
-				database: database.write,
+				database,
 				struct
 			})
 		},
@@ -100,7 +117,7 @@ export function create({ database, struct }){
 		count(args = {}){
 			return count({
 				...args,
-				database: database.read,
+				database,
 				struct
 			})
 		},

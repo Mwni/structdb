@@ -30,6 +30,10 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 
 	if(iter){
 		let iterator = database.iter(query)
+		let resolveDone
+		let done = new Promise(resolve => {
+			resolveDone = resolve
+		})
 			
 		return {
 			[Symbol.iterator](){
@@ -37,10 +41,13 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 					next(){
 						let { value: row, done } = iterator.next()
 
-						if(done)
+						if(done){
+							resolveDone()
+							
 							return {
 								done: true
 							}
+						}
 		
 						return {
 							value: resolveNesting({ 
@@ -51,7 +58,8 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 						}
 					}
 				}
-			}
+			},
+			done
 		}
 	}else{
 		return database.all(query)

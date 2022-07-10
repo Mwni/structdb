@@ -51,8 +51,8 @@ export function open({ file, journalMode, readonly = false }){
 			return blank
 		},
 
-		clone(){
-			return open({ file, journalMode })
+		clone(overrides = {}){
+			return open({ file, journalMode, readonly, ...overrides })
 		},
 
 		close(){
