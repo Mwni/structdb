@@ -10,6 +10,8 @@
     }
   },
   "packages": [
-    "*"
+    "sqlite",
+    "codec",
+    "serializer"
   ]
 }
