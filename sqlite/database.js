@@ -46,7 +46,7 @@ export function open({ file, journalMode, readonly = false }){
 		}
 	}
 
-	return patchImmediateLockThrow({
+	return {
 		get blank(){
 			return blank
 		},
@@ -114,7 +114,7 @@ export function open({ file, journalMode, readonly = false }){
 			return prepare(text, false)
 				.iterate(values)
 		},
-	})
+	}
 }
 
 export function tracing(database){
@@ -159,6 +159,7 @@ export function tracing(database){
 	}
 }
 
+/*
 function patchImmediateLockThrow(database){
 	return {
 		...database,
@@ -196,4 +197,4 @@ export function msleep(n) {
 		0, 
 		n
 	)
-}
+}*/
