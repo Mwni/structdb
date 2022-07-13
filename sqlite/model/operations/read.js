@@ -68,6 +68,12 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 	}
 }
 
+export function readRaw({ database, struct, query, params }){
+	return database.all({ text: query, values: params })
+		.map(row => makeRowIntegerSafe(row))
+		.map(row => struct.decode(row))
+}
+
 export function count({ database, struct, where, distinct, limit }){
 	let query = sql.select({
 		count: ['*'],

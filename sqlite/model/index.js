@@ -1,5 +1,5 @@
 import { createOne } from './operations/create.js'
-import { read, count } from './operations/read.js'
+import { read, count, readRaw } from './operations/read.js'
 import { update } from './operations/update.js'
 import { remove } from './operations/delete.js'
 
@@ -39,6 +39,14 @@ export function create({ database, struct }){
 
 		readMany(args = {}){
 			return read({
+				...args,
+				database,
+				struct
+			})
+		},
+
+		readManyRaw(args = {}){
+			return readRaw({
 				...args,
 				database,
 				struct
