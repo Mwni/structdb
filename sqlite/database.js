@@ -4,14 +4,14 @@ import InternalSQLError from './errors/internal-sql.js'
 
 
 
-export function open({ file, journalMode, readonly = false }){
+export function open({ file, journalMode, timeout = 10000, readonly = false }){
 	let connection
 	let blank = !fs.existsSync(file)
 	let statementCache = {}
 
 	try{
 		connection = new DatabaseAdapter(file, { 
-			timeout: 60000, 
+			timeout, 
 			readonly 
 		})
 
