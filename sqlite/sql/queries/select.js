@@ -73,7 +73,7 @@ export default function({ fields, distinct, count, table, tableAlias, where, joi
 		...joins,
 		{
 			text: `WHERE %`,
-			items: where.items.length > 0
+			items: where?.items?.length
 				? [where]
 				: ['1']
 		},
