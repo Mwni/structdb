@@ -27,11 +27,15 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 					throw new TypeError(`The field "${key}" has to be a object, as defined in the schema`)
 				}
 
-				nodes.push({
-					key,
-					struct: childConf,
-					value
-				})
+				if(value[childConf.table.idKey] !== undefined){
+					tableData[key] = value[childConf.table.idKey]
+				}else{
+					nodes.push({
+						key,
+						struct: childConf,
+						value
+					})
+				}
 			}
 
 			include[key] = true
@@ -41,22 +45,6 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 			throw new Error(`The field "${key}" is not defined in the schema`)
 		}
 	}
-
-	let where = unflatten({
-		struct,
-		item: pullUniques({ struct, data: tableData })
-	})
-	
-
-	let [ existingItem ] = read({
-		database,
-		struct,
-		where: inputData,
-		take: -1
-	})
-
-	if(existingItem)
-		return existingItem
 
 	/*if(Object.keys(where).length > 0){
 		let [ existingItem ] = read({
@@ -80,6 +68,21 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 
 		tableData[node.key] = childInstance[node.struct.table.idKey]
 	}
+
+	let where = unflatten({
+		struct,
+		item: pullUniques({ struct, data: tableData })
+	})
+
+	let [ existingItem ] = read({
+		database,
+		struct,
+		where: inputData,
+		take: -1
+	})
+
+	if(existingItem)
+		return existingItem
 
 	database.run(
 		sql.upsert({
