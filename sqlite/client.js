@@ -28,6 +28,10 @@ export function open({ file, schema, codecs = [], ...options }){
 		database,
 		...models, 
 
+		loadExtension(path){
+			return database.loadExtension(path)
+		},
+
 		close(){
 			database.close()
 		},

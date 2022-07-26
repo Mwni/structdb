@@ -51,6 +51,10 @@ export function open({ file, journalMode, timeout = 10000, readonly = false }){
 			return blank
 		},
 
+		loadExtension(path){
+			return connection.loadExtension(path)
+		},
+
 		clone(overrides = {}){
 			return open({ file, journalMode, readonly, ...overrides })
 		},
