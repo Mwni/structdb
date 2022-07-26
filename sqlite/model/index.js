@@ -37,6 +37,14 @@ export function create({ database, struct }){
 			)[0]
 		},
 
+		readOneRaw(args = {}){
+			return readRaw({
+				...args,
+				database,
+				struct
+			})[0]
+		},
+
 		readMany(args = {}){
 			return read({
 				...args,
