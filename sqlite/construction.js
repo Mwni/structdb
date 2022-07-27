@@ -51,7 +51,22 @@ function constructTable({ database, schema }){
 				name,
 				table: schema.name,
 				unique,
-				fields
+				fields: fields.map(field => {
+					if(field.endsWith(':asc'))
+						return {
+							key: field.slice(0, -4),
+							order: 'asc'
+						}
+					else if(field.endsWith(':desc'))
+						return {
+							key: field.slice(0, -5),
+							order: 'desc'
+						}
+					else
+						return {
+							key: field
+						}
+				})
 			})
 		)
 	}
