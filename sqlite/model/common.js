@@ -121,7 +121,7 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 							],
 							index
 						})
-					}else if(include[key]){
+					/*}else if(include[key]){
 						conditions.push({
 							...composeFilter({
 								where: value, 
@@ -130,7 +130,7 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 								chain: [...chain, key]
 							}),
 							index
-						})
+						})*/
 					}else{
 						subqueries.push({
 							key,
@@ -234,7 +234,7 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 	}
 
 	return {
-		text: `%`,
+		text: `(%)`,
 		join: ` AND `,
 		items: conditions
 			.sort((a, b) => a.index - b.index)
