@@ -90,10 +90,14 @@ function formatField(field){
 	if(typeof field === 'string')
 		field = { name: field }
 
-	return [
-		field.table
+	let key = field.table
 			? `"${field.table}"."${field.name}"`
-			: `"${field.name}"`,
+			: `"${field.name}"`
+
+	return [
+		field.function
+			? `${field.function}(${key})`
+			: key,
 		field.nameAlias
 			? `AS "${field.nameAlias}"`
 			: null

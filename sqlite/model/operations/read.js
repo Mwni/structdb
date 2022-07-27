@@ -2,7 +2,7 @@ import sql from '../../sql/index.js'
 import { composeFilter } from '../common.js'
 
 
-export function read({ database, struct, where = {}, include, distinct, orderBy, groupBy, skip, take, iter }){
+export function read({ database, struct, select, where = {}, include, distinct, orderBy, groupBy, skip, take, iter }){
 	if(take === 0)
 		return []
 
@@ -17,7 +17,7 @@ export function read({ database, struct, where = {}, include, distinct, orderBy,
 	
 
 	let query = sql.select({
-		...composeNesting({ struct, include }),
+		...composeNesting({ struct, select, include }),
 		table: struct.table.name,
 		tableAlias: 'T',
 		where: composeFilter({ where, include, struct }),
@@ -87,15 +87,19 @@ export function count({ database, struct, where, distinct, limit }){
 }
 
 
-function composeNesting({ include, struct, chain = [] }){
+function composeNesting({ select, include, struct, chain = [] }){
 	let fields = []
 	let joins = []
 	let table = ['T', ...chain].join('.')
 
-	for(let [key, field] of Object.entries(struct.table.fields)){
+	for(let key of Object.keys(struct.table.fields)){
+		if(select && !select[key])
+			continue
+
 		fields.push({
 			name: key,
 			nameAlias: [...chain, key].join('.'),
+			function: select?.[key]?.function,
 			table
 		})
 	}
@@ -118,6 +122,7 @@ function composeNesting({ include, struct, chain = [] }){
 		})
 
 		let nesting = composeNesting({
+			select: select?.[key],
 			include: include[key], 
 			struct: node, 
 			chain:  [...chain, key]
