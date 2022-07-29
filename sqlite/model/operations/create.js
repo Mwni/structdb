@@ -3,7 +3,7 @@ import { read } from './read.js'
 import { unflatten } from '../common.js'
 
 
-export function createOne({ database, struct, data: inputData, include = {} }){
+export function createOne({ database, struct, data: inputData, include = {}, returnUnchanged = true }){
 	let tableData = {}
 	let nodes = []
 	let postInsertCreate = []
@@ -82,7 +82,9 @@ export function createOne({ database, struct, data: inputData, include = {} }){
 	})
 
 	if(existingItem)
-		return existingItem
+		return returnUnchanged
+			? existingItem
+			: undefined
 
 	database.run(
 		sql.upsert({
