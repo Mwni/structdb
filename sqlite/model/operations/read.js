@@ -76,8 +76,9 @@ export function readRaw({ database, struct, query, params }){
 
 export function count({ database, struct, where, distinct, limit }){
 	let query = sql.select({
-		count: ['*'],
+		count: true,
 		table: struct.table.name,
+		tableAlias: 'T',
 		where: composeFilter({ where, struct }),
 		distinct,
 		limit

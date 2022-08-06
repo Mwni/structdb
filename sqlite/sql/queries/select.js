@@ -2,12 +2,16 @@ export default function({ fields, distinct, count, table, tableAlias, where, joi
 	let selection
 	let limitation
 
-	if(count){
+	if(count && distinct){
 		selection = {
-			text: `COUNT(%)`,
+			text: `COUNT(DISTINCT %)`,
 			join: `, `,
-			items: count
+			items: distinct
 				.map(formatField)
+		}
+	}else if(count){
+		selection = {
+			text: `COUNT(1)`
 		}
 	}else if(distinct){
 		selection = {
