@@ -8,6 +8,19 @@ export function deserialize(schema){
 export function object(schema){
 	let object = {}
 
+	if(schema.dynamicProperties.length > 0){
+		let bits = readBitfield.call(this, schema.dynamicProperties.length)
+
+		for(let i=0; i<bits.length; i++){
+			if(!bits[i])
+				continue
+
+			let { key, schema: subschema } = schema.dynamicProperties[i]
+
+			object[key] = deserialize.call(this, subschema)
+		}
+	}
+
 	for(let prop of schema.staticProperties){
 		object[prop.key] = deserialize.call(this, prop.schema)
 	}
@@ -49,6 +62,19 @@ export function number(){
 	return number
 }
 
+export function blob(data){
+	let length = this.view.getUint32(this.offset)
+	this.offset += 4
+
+	let bytes = new Uint8Array(
+		new Uint8Array(this.buffer)
+			.slice(this.offset, this.offset+length)
+	)
+	this.offset += length
+
+	return bytes.buffer
+}
+
 function readSize(){
 	let bytes = new Uint8Array(4)
 
@@ -80,4 +106,21 @@ function readCompact(){
 	return data[data.length - 1]
 		? data
 		: data.slice(0, -1)
+}
+
+function readBitfield(numBits){
+	let bits = []
+	let bytes = Array(Math.ceil(numBits / 8))
+		.fill(0)
+		.map(() => this.view.getUint8(this.offset++))
+
+	for(let i=0; i<numBits; i++){
+		let bi = Math.ceil(bits.length / 8)
+
+		bits.push(
+			bytes[bi] & (1 << (i % 8))
+		)
+	}
+
+	return bits
 }

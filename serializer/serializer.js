@@ -2,9 +2,11 @@ import transformSchema from './schema.js'
 import * as serializationMethods from './serialize.js'
 import * as deserializationMethods from './deserialize.js'
 
-export default function createSerializer({ schema }){
+export default function createSerializer({ schema, buffer }){
+	if(!buffer)
+		buffer = new ArrayBuffer(1000000)
+
 	let tSchema = transformSchema(schema)
-	let buffer = new ArrayBuffer(1000000)
 	let view = new DataView(buffer)
 
 	return {
@@ -16,7 +18,7 @@ export default function createSerializer({ schema }){
 				methods: serializationMethods
 			}
 	
-			serializationMethods.encode.call(state, data, tSchema)
+			serializationMethods.serialize.call(state, data, tSchema)
 	
 			return buffer.slice(0, state.offset)
 		},
@@ -29,7 +31,7 @@ export default function createSerializer({ schema }){
 				methods: deserializationMethods
 			}
 			
-			return deserializationMethods.decode.call(state, tSchema)
+			return deserializationMethods.deserialize.call(state, tSchema)
 		}
 	}
 }

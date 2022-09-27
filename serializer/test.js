@@ -1,46 +1,51 @@
-import Codec from './Codec.js'
+import createSerializer from './serializer.js'
 
 const toBinString = (bytes) =>
   bytes.reduce((str, byte) => str + byte.toString(2).padStart(8, '0') + ' ', '');
 
-let codec = new Codec({
-	type: 'object',
-	properties: {
-		name: {
-			type: 'string'
-		},
-		age: {
-			type: 'number'
-		},
-		account: {
-			type: 'object',
-			properties: {
-				id: {
-					type: 'integer'
-				},
-				created_at: {
-					type: 'string'
-				}
+let codec = createSerializer({
+	schema: {
+		type: 'object',
+		properties: {
+			signature: {
+				type: 'blob'
 			},
-			required: ['id']
-		},
-		posts: {
-			type: 'array',
-			items: {
+			name: {
+				type: 'string'
+			},
+			age: {
+				type: 'number'
+			},
+			account: {
 				type: 'object',
 				properties: {
 					id: {
 						type: 'integer'
 					},
-					text: {
+					created_at: {
 						type: 'string'
 					}
 				},
-				required: ['id', 'text']
+				required: ['id']
 			},
-		}
-	},
-	required: ['name', 'age', 'account', 'posts']
+			posts: {
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						id: {
+							type: 'integer'
+						},
+						text: {
+							type: 'string'
+						}
+					},
+					required: ['id', 'text']
+				},
+			}
+		},
+		required: ['name', 'age', 'account', 'posts']
+	}
 })
 
 let data = {
@@ -59,11 +64,12 @@ let data = {
 			id: 121213,
 			text: 'kek'
 		}
-	]
+	],
+	signature: Uint8Array.from([1,2,3]).buffer
 }
 
-let encoded = codec.encode(data)
+let encoded = codec.serialize(data)
 
 console.log('encoded:', encoded)
 console.log('json size:', JSON.stringify(data).length)
-console.log('decoded:', codec.decode(encoded))
+console.log('decoded:', codec.deserialize(encoded))
