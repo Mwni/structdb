@@ -43,8 +43,8 @@ export function string(data){
 }
 
 export function integer(data){
-	this.view.setInt32(this.offset, data)
-	this.offset += 4
+	this.view.setBigInt64(this.offset, BigInt(data))
+	this.offset += 8
 }
 
 export function number(data){

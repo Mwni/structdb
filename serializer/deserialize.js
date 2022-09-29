@@ -49,10 +49,10 @@ export function string(){
 }
 
 export function integer(){
-	let integer = this.view.getUint32(this.offset)
-	this.offset += 4
+	let integer = this.view.getBigInt64(this.offset)
+	this.offset += 8
 
-	return integer
+	return Number(integer)
 }
 
 export function number(){
