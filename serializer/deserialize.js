@@ -75,6 +75,10 @@ export function blob(data){
 	return bytes.buffer
 }
 
+export function any(){
+	return JSON.parse(string.call(this))
+}
+
 function readSize(){
 	let bytes = new Uint8Array(4)
 

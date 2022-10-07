@@ -10,11 +10,14 @@ export function object(data, schema){
 		writeBitfield.call(
 			this,
 			schema.dynamicProperties.map(
-				({ key }) => data[key] != undefined
+				({ key }) => data[key] != null
 			)
 		)
 
 		for(let { key, schema: subschema } of schema.dynamicProperties){
+			if(data[key] == null)
+				continue
+
 			serialize.call(this, data[key], subschema)
 		}
 	}
@@ -63,6 +66,10 @@ export function blob(data){
 		this.offset
 	)
 	this.offset += bytes.length
+}
+
+export function any(data){
+	return string.call(this, JSON.stringify(data))
 }
 
 
