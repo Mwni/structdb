@@ -16,7 +16,7 @@ export default {
 	},
 
 	decode(data, schema){
-		if(!data)
+		if(data == null)
 			return null
 
 		return schema.enum[data]
