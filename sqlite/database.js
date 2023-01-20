@@ -59,12 +59,27 @@ export function open({ file, journalMode, timeout = 10000, readonly = false }){
 			return open({ file, journalMode, readonly, ...overrides })
 		},
 
-		backup({ destinationFile, progress }){
-			return connection.backup(destinationFile, {
+		backup({ destinationFile, lockDatabase, progress }){
+			let promise = connection.backup(destinationFile, {
 				progress: ({ totalPages, remainingPages }) => {
 					progress(1 - remainingPages / totalPages)
 				}
 			})
+
+			if(lockDatabase){
+				let lockConnection = new DatabaseAdapter(file, { timeout })
+
+				lockConnection.exec('BEGIN EXCLUSIVE')
+
+				promise.finally(
+					() => {
+						lockConnection.exec('ROLLBACK')
+						lockConnection.close()
+					}
+				)
+			}
+
+			return promise
 		},
 
 		close(){
