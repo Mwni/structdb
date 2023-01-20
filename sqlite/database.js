@@ -59,6 +59,14 @@ export function open({ file, journalMode, timeout = 10000, readonly = false }){
 			return open({ file, journalMode, readonly, ...overrides })
 		},
 
+		backup({ destinationFile, progress }){
+			return connection.backup(destinationFile, {
+				progress: ({ totalPages, remainingPages }) => {
+					progress(1 - remainingPages / totalPages)
+				}
+			})
+		},
+
 		close(){
 			connection.close()
 		},
