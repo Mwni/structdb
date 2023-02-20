@@ -16,23 +16,18 @@ export function update({ database, struct, data: inputData, where, limit }){
 					throw new TypeError(`field "${key}" has to be an array, as defined in the schema`)
 				}
 
-				// todo
+				throw Error(`array updates not yet implemented`)
 			}else{
 				if(typeof value !== 'object'){
 					throw new TypeError(`field "${key}" has to be a object, as defined in the schema`)
 				}
 
-				throw Error(`nested updates not yet implemented`)
-
-				/*update({
-					database,
-					struct: childConf,
-					data: value,
-					where: 
-				})*/
+				if(value[childConf.table.idKey] !== undefined && Object.keys(value).length !== 1){
+					tableData[key] = value[childConf.table.idKey]
+				}else{
+					throw Error(`recursive updates not yet implemented`)
+				}
 			}
-
-			include[key] = true
 		}else if(fieldConf){
 			tableData[key] = value
 		}
