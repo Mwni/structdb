@@ -14,7 +14,7 @@ export function generate({ schema, codecs }){
 			return previous.node
 
 		for(let [key, prop] of Object.entries(schema.properties)){
-			if(prop.type === 'array'){
+			if(prop.type === 'array' && prop.items){
 				let referenceKeys = findReferenceKeys(prop.items, schema)
 
 				if(referenceKeys.length === 0){
