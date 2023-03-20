@@ -37,7 +37,7 @@ function constructTable({ database, schema }){
 						name: key,
 						primary: !!id,
 						type: typeMap[type],
-						autoincrement: id && !defaultValue && !required,
+						autoincrement: id && type === 'integer' && !defaultValue && !required,
 						default: defaultValue,
 						notNull: defaultValue !== undefined || required,
 					}
