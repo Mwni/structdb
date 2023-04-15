@@ -1,8 +1,0 @@
-{
-	"name": "@structdb/test",
-	"version": "1.0.0-alpha",
-	"type": "module",
-	"dependencies": {
-		"@structdb/sqlite": "1.0.0-alpha"
-	}
-}
