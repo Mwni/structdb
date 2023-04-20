@@ -11,7 +11,8 @@ export function open({ host, user, password, database }){
 			host, 
 			user, 
 			password, 
-			database
+			database,
+			charset: 'utf8mb4'
 		})
 	}catch(error){
 		throw error
@@ -38,7 +39,6 @@ export function open({ host, user, password, database }){
 	}
 
 	async function query({ sql, values }){
-		console.log(sql, values)
 		try{
 			var con = await getConnection()
 		}catch(e){
