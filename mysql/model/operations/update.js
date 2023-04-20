@@ -33,7 +33,7 @@ export async function update({ database, struct, data: inputData, where, limit }
 		}
 	}
 
-	await database.run(
+	await database.exec(
 		sql.update({
 			table: struct.table.name,
 			tableAlias: 'T',
