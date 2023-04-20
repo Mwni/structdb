@@ -46,8 +46,6 @@ export async function createOne({ database, struct, data: inputData, include = {
 		}
 	}
 
-	console.log('create node:', inputData, nodes)
-
 	for(let node of nodes){
 		let childInstance = await createOne({
 			database,
