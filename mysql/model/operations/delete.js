@@ -8,7 +8,10 @@ export async function remove({ database, struct, where = {}, limit }){
 			table: struct.table.name,
 			tableAlias: 'T',
 			where: composeFilter({ where, struct }),
-			limit
+			/*orderBy: {
+				[struct.table.idKey]: 'asc'
+			},
+			limit*/
 		})
 	)
 }
