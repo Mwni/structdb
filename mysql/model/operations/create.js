@@ -51,6 +51,7 @@ export async function createOne({ database, struct, data: inputData, include = {
 			database,
 			struct: node.struct,
 			data: node.value,
+			returnUnchanged: true
 		})
 
 		tableData[node.key] = childInstance[node.struct.table.idKey]
@@ -61,14 +62,14 @@ export async function createOne({ database, struct, data: inputData, include = {
 		item: pullUniques({ struct, data: tableData })
 	})
 
-	if(Object.keys(where) > 0){
+	if(Object.keys(where).length > 0){
 		let [ existingItem ] = await read({
 			database,
 			struct,
 			where,
 			take: -1
 		})
-	
+
 		if(existingItem)
 			return returnUnchanged
 				? existingItem
