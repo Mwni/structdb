@@ -62,9 +62,54 @@ export async function read({ database, struct, select, where = {}, include, dist
 			done
 		}
 	}else{
-		return (await database.all(query))
+		let rows = (await database.all(query))
 			.map(row => makeRowIntegerSafe(row))
 			.map(row => resolveNesting({ data: row, include, struct }))
+
+		for(let node of Object.values(struct.nodes)){
+			if(!node.many)
+				continue
+
+			if(!include || !include[node.key])
+				continue
+
+			console.log(node, {
+				[node.referenceKey]: {
+					id: {
+						in: rows.map(
+							row => row[struct.table.idKey]
+						)
+					}
+				}
+			})
+
+			let subrows = await read({
+				database,
+				struct: node,
+				where: {
+					[node.referenceKey]: {
+						id: {
+							in: rows.map(
+								row => row[struct.table.idKey]
+							)
+						}
+					}
+				}
+			})
+
+			console.log(rows, subrows)
+
+			rows = rows.map(
+				row => ({
+					...row,
+					[node.key]: subrows.filter(
+						subrow => subrow[node.referenceKey][struct.table.idKey] == row[struct.table.idKey]
+					)
+				})
+			)
+		}
+
+		return rows
 	}
 }
 
