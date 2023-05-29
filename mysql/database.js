@@ -12,7 +12,8 @@ export function open({ host, user, password, database }){
 			user, 
 			password, 
 			database,
-			charset: 'utf8mb4'
+			charset: 'utf8mb4',
+			dateStrings: true
 		})
 	}catch(error){
 		throw error
