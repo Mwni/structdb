@@ -73,16 +73,6 @@ export async function read({ database, struct, select, where = {}, include, dist
 			if(!include || !include[node.key])
 				continue
 
-			console.log(node, {
-				[node.referenceKey]: {
-					id: {
-						in: rows.map(
-							row => row[struct.table.idKey]
-						)
-					}
-				}
-			})
-
 			let subrows = await read({
 				database,
 				struct: node,
@@ -96,8 +86,6 @@ export async function read({ database, struct, select, where = {}, include, dist
 					}
 				}
 			})
-
-			console.log(rows, subrows)
 
 			rows = rows.map(
 				row => ({
