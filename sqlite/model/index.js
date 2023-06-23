@@ -119,7 +119,7 @@ export function create({ database, struct }){
 				database,
 				struct,
 				limit: 1
-			})
+			}).affectedRows === 1
 		},
 
 		deleteMany(args = {}){
@@ -127,7 +127,7 @@ export function create({ database, struct }){
 				...args,
 				database,
 				struct
-			})
+			}).affectedRows
 		},
 
 		count(args = {}){

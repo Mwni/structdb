@@ -123,8 +123,11 @@ export function open({ file, journalMode, timeout = 10000, readonly = false }){
 		},
 	
 		run({ text, values }){
-			return prepare(text, true)
-				.run(values)
+			return {
+				affectedRows: prepare(text, true)
+					.run(values)
+					.changes
+			}
 		},
 
 		get({ text, values }){
