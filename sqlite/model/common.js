@@ -199,13 +199,18 @@ export function composeFilter({ where, include = {}, struct, chain = [] }){
 			}
 		}
 	}
+	
+	let encoded = {}
 
-	let encoded = struct.encode(
-		fields.reduce(
-			(data, { key, value }) => ({ ...data, [key]: value }),
-			{}
-		)
-	)
+	for(let { key, operator, value } of fields){
+		if(operator === 'IN'){
+			encoded[key] = value.map(
+				value => struct.encodeField(key, value)
+			)
+		}else{
+			encoded[key] = struct.encodeField(key, value)
+		}
+	}
 
 	for(let { key, table, operator, index } of fields){
 		let value = encoded[key]
