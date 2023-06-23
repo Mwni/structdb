@@ -27,6 +27,12 @@ export function create({ schema, codecs }){
 			return encoded
 		},
 
+		encodeField(key, data){
+			return fieldEncoders[key]
+				? fieldEncoders[key](data)
+				: data
+		},
+
 		decode(data){
 			let decoded = { ...data }
 
@@ -36,7 +42,13 @@ export function create({ schema, codecs }){
 			}
 
 			return decoded
-		}
+		},
+
+		decodeField(key, data){
+			return fieldDecoders[key]
+				? fieldDecoders[key](data)
+				: data
+		},
 	}
 }
 
