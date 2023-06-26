@@ -1,6 +1,6 @@
 {
 	"name": "@structdb/sqlite",
-	"version": "1.5.0-alpha",
+	"version": "1.5.1-alpha",
 	"type": "module",
 	"main": "index.js",
 	"dependencies": {
