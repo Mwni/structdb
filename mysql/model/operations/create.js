@@ -3,7 +3,7 @@ import { read } from './read.js'
 import { unflatten } from '../common.js'
 
 
-export async function createOne({ database, struct, data: inputData, include = {}, returnUnchanged = true }){
+export async function createOne({ database, struct, data: inputData, include = {}, returnUnchanged = true, updateIfExists = true }){
 	let tableData = {}
 	let nodes = []
 	let postInsertCreate = []
@@ -62,6 +62,8 @@ export async function createOne({ database, struct, data: inputData, include = {
 		item: pullUniques({ struct, data: tableData })
 	})
 
+	let encodedTableData = struct.encode(tableData)
+
 	if(Object.keys(where).length > 0){
 		let [ existingItem ] = await read({
 			database,
@@ -70,16 +72,34 @@ export async function createOne({ database, struct, data: inputData, include = {
 			take: -1
 		})
 
-		if(existingItem)
-			return returnUnchanged
-				? existingItem
-				: undefined
+		if(existingItem){
+			let returnExisting = false
+
+			if(updateIfExists){
+				let existingTableData = unflatten({
+					struct,
+					item: existingItem
+				})
+
+				returnExisting = Object.entries(encodedTableData).every(
+					([key, value]) => value == existingTableData[key]
+				)
+			}else{
+				returnExisting = true
+			}
+
+			if(returnExisting){
+				return returnUnchanged
+					? existingItem
+					: undefined
+			}
+		}
 	}
 
 	let insertId = await database.insert(
 		sql.upsert({
 			table: struct.table.name,
-			data: struct.encode(tableData)
+			data: encodedTableData
 		})
 	)
 
