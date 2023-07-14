@@ -1,20 +1,35 @@
 import fs from 'fs'
-import { createConnection } from 'mysql'
+import { createConnection, createPool } from 'mysql'
+import createPoolPatched from './patches/mysql-pool-idle.js'
 
 
-export function open({ host, user, password, database }){
+export function open({ host, user, password, database, poolSize }){
 	let connection
-	let isPool = false
+	let isPool = !!poolSize
 
 	try{
-		connection = createConnection({ 
-			host, 
-			user, 
-			password, 
-			database,
-			charset: 'utf8mb4',
-			dateStrings: true
-		})
+		if(isPool){
+			connection = createPoolPatched(createPool)({ 
+				connectionLimit: poolSize,
+				host, 
+				user, 
+				password, 
+				database,
+				charset: 'utf8mb4',
+				dateStrings: true,
+				idleConnectionTimeout: 10800
+			})
+		}else{
+			connection = createConnection({ 
+				host, 
+				user, 
+				password, 
+				database,
+				charset: 'utf8mb4',
+				dateStrings: true
+			})
+		}
+		
 	}catch(error){
 		throw error
 	}
