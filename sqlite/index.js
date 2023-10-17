@@ -1,1 +1,1 @@
-export { open } from './client.js'
+export { createStructDB as default } from './client.js'
