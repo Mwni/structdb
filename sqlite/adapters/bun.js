@@ -3,7 +3,7 @@ import { Database } from 'bun:sqlite'
 import InternalSQLError from '../errors/internal-sql.js'
 
 
-export default function({ file, journalMode, timeout = 10000, readonly = false }){
+export default function createAdapter({ file, journalMode, timeout = 10000, readonly = false }){
 	let connection
 	let blank = !fs.existsSync(file)
 
@@ -41,7 +41,7 @@ export default function({ file, journalMode, timeout = 10000, readonly = false }
 		},
 
 		clone(overrides = {}){
-			return open({ file, journalMode, readonly, ...overrides })
+			return createAdapter({ file, journalMode, readonly, ...overrides })
 		},
 
 		backup({ destinationFile, lockDatabase, progress }){
