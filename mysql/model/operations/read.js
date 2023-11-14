@@ -77,6 +77,7 @@ export async function read({ database, struct, select, where = {}, include, dist
 				let subrows = await read({
 					database,
 					struct: node,
+					include: include?.[node.key],
 					where: {
 						[node.referenceKey]: {
 							id: {
