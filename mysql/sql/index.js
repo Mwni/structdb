@@ -14,7 +14,7 @@ function compile(tree){
 		}
 	}
 
-	let sql = tree.text
+	let sql = tree.text || tree.sql
 	let values = tree.values || []
 
 	if(tree.items){

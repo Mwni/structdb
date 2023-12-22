@@ -1,6 +1,6 @@
 {
 	"name": "@structdb/mysql",
-	"version": "1.3.2-alpha",
+	"version": "1.3.3-alpha",
 	"type": "module",
 	"main": "index.js",
 	"dependencies": {
