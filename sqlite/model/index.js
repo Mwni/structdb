@@ -7,6 +7,8 @@ import { remove } from './operations/delete.js'
 
 export function create({ database, struct }){
 	return {
+		struct,
+		
 		createOne(args){
 			return createOne({
 				...args,
