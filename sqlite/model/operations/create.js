@@ -86,7 +86,7 @@ export function createOne({ database, struct, data: inputData, include = {}, ret
 			? existingItem
 			: undefined
 
-	database.run(
+	let createdRow = database.get(
 		sql.upsert({
 			table: struct.table.name,
 			data: struct.encode(tableData)
@@ -97,9 +97,8 @@ export function createOne({ database, struct, data: inputData, include = {}, ret
 		database,
 		struct,
 		include: inputData,
-		where,
-		orderBy: {
-			[struct.table.idKey]: 'desc'
+		where: {
+			[struct.table.idKey]: createdRow[struct.table.idKey]
 		},
 		take: 1
 	})

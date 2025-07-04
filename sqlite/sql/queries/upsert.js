@@ -27,5 +27,8 @@ export default function({ table, data }){
 			items: Object.keys(data)
 				.map(key => `"${key}" = excluded."${key}"`)
 		},
+		{
+			text: `RETURNING *`
+		}
 	]
 }
